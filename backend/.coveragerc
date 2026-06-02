@@ -1,0 +1,12 @@
+[run]
+source = plantcare
+omit =
+    */migrations/*
+    */tests/*
+    plantcare/admin.py
+    plantcare/apps.py
+    plantcare/management/*
+
+[report]
+show_missing = True
+skip_covered = True
