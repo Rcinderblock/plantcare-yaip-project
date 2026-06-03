@@ -1,4 +1,6 @@
-import { Card, CardContent, CardMedia, Chip, Stack, Typography } from "@mui/material";
+import SpaIcon from "@mui/icons-material/Spa";
+import { Box, Card, CardContent, CardMedia, Chip, Stack, Typography } from "@mui/material";
+import { useState } from "react";
 
 import type { PlantSpecies } from "../types/api";
 
@@ -9,9 +11,30 @@ const lightLabel: Record<string, string> = {
 };
 
 export function SpeciesCard({ species }: { species: PlantSpecies }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = species.image_url && !imageFailed;
+
   return (
     <Card sx={{ height: "100%", overflow: "hidden" }}>
-      {species.image_url && <CardMedia component="img" image={species.image_url} height="170" alt={species.name} />}
+      {showImage ? (
+        <CardMedia component="img" image={species.image_url} height="170" alt={species.name} onError={() => setImageFailed(true)} />
+      ) : (
+        <Box
+          sx={{
+            alignItems: "center",
+            bgcolor: "primary.light",
+            color: "primary.contrastText",
+            display: "flex",
+            height: 170,
+            justifyContent: "center",
+          }}
+        >
+          <Stack alignItems="center" spacing={1}>
+            <SpaIcon sx={{ fontSize: 54 }} />
+            <Typography fontWeight={700}>{species.name}</Typography>
+          </Stack>
+        </Box>
+      )}
       <CardContent>
         <Stack spacing={1.5}>
           <Stack direction="row" justifyContent="space-between" gap={1}>

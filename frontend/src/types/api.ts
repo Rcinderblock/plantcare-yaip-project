@@ -76,5 +76,10 @@ export interface WeatherRecommendation {
   should_water_today: boolean;
   next_watering_date: string;
   precipitation_mm: number;
+  precipitation_tomorrow_mm: number;
+  temperature_c: number;
+  humidity_percent: number;
+  rain_expected: boolean;
+  weather_summary: string;
   message: string;
 }

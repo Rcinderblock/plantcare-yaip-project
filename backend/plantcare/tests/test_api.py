@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from plantcare.models import CareLog, CareTask, Collection, PlantSpecies, UserPlant
+from plantcare.services import WeatherSnapshot
 
 
 @pytest.fixture
@@ -126,13 +127,25 @@ def test_weather_recommendation_endpoint(auth_client, user, species, monkeypatch
         location_type="balcony",
         last_watered_at=timezone.now() - timedelta(days=8),
     )
-    monkeypatch.setattr("plantcare.views.WeatherService.fetch_precipitation", lambda self, lat, lon: 4.0)
+    monkeypatch.setattr(
+        "plantcare.views.WeatherService.fetch_weather",
+        lambda self, lat, lon: WeatherSnapshot(
+            temperature_c=18.2,
+            humidity_percent=76,
+            precipitation_today_mm=4.0,
+            precipitation_tomorrow_mm=1.5,
+        ),
+    )
 
     response = auth_client.get(f"/api/weather/recommendation/?plant_id={plant.id}&latitude=55.7&longitude=37.6")
 
     assert response.status_code == 200
     assert response.data["should_water_today"] is False
     assert response.data["precipitation_mm"] == 4.0
+    assert response.data["precipitation_tomorrow_mm"] == 1.5
+    assert response.data["temperature_c"] == 18.2
+    assert response.data["humidity_percent"] == 76
+    assert response.data["rain_expected"] is True
 
 
 @pytest.mark.django_db

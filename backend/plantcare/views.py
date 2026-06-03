@@ -190,6 +190,11 @@ class WeatherRecommendationView(APIView):
                 "should_water_today": drf_serializers.BooleanField(),
                 "next_watering_date": drf_serializers.DateField(),
                 "precipitation_mm": drf_serializers.FloatField(),
+                "precipitation_tomorrow_mm": drf_serializers.FloatField(),
+                "temperature_c": drf_serializers.FloatField(),
+                "humidity_percent": drf_serializers.IntegerField(),
+                "rain_expected": drf_serializers.BooleanField(),
+                "weather_summary": drf_serializers.CharField(),
                 "message": drf_serializers.CharField(),
             },
         ),
@@ -199,6 +204,6 @@ class WeatherRecommendationView(APIView):
         latitude = float(request.query_params.get("latitude", 55.7558))
         longitude = float(request.query_params.get("longitude", 37.6173))
         service = WeatherService()
-        precipitation = service.fetch_precipitation(latitude, longitude)
-        recommendation = service.build_recommendation(plant, precipitation)
+        weather = service.fetch_weather(latitude, longitude)
+        recommendation = service.build_recommendation(plant, weather)
         return Response(recommendation.__dict__)

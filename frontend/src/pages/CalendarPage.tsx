@@ -90,15 +90,29 @@ export function CalendarPage() {
             Новая задача
           </Typography>
           <Box component="form" className="form-grid" onSubmit={submit}>
-            <TextField select label="Растение" SelectProps={{ native: true }} {...form.register("plant", { required: true })}>
-              <option value="">Выберите растение</option>
+            <TextField
+              select
+              label="Растение"
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{ native: true }}
+              {...form.register("plant", { required: true })}
+            >
+              <option value="" disabled>
+                Выберите растение
+              </option>
               {plants.map((plant) => (
                 <option key={plant.id} value={plant.id}>
                   {plant.nickname}
                 </option>
               ))}
             </TextField>
-            <TextField select label="Тип" SelectProps={{ native: true }} {...form.register("task_type")}>
+            <TextField
+              select
+              label="Тип"
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{ native: true }}
+              {...form.register("task_type")}
+            >
               <option value="water">Полив</option>
               <option value="fertilize">Удобрение</option>
               <option value="repot">Пересадка</option>

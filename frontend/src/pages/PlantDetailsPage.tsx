@@ -133,11 +133,22 @@ export function PlantDetailsPage() {
               <Typography variant="h5">Погодная подсказка</Typography>
               {recommendation ? (
                 <>
-                  <Typography>{recommendation.message}</Typography>
-                  <Typography color="text.secondary">Осадки сегодня: {recommendation.precipitation_mm} мм</Typography>
+                  <Typography fontWeight={700}>{recommendation.weather_summary}</Typography>
+                  <Typography color="text.secondary">{recommendation.message}</Typography>
+                  <Stack direction="row" gap={1} flexWrap="wrap">
+                    <Chip label={`Температура ${recommendation.temperature_c.toFixed(1)} °C`} />
+                    <Chip label={`Влажность ${recommendation.humidity_percent}%`} />
+                    <Chip label={`Осадки сегодня ${recommendation.precipitation_mm.toFixed(1)} мм`} />
+                    <Chip label={`Осадки завтра ${recommendation.precipitation_tomorrow_mm.toFixed(1)} мм`} />
+                  </Stack>
                   <Chip
-                    color={recommendation.should_water_today ? "warning" : "success"}
-                    label={recommendation.should_water_today ? "Полить сегодня" : "Можно подождать"}
+                    color={recommendation.rain_expected ? "info" : "success"}
+                    label={recommendation.rain_expected ? "Скоро дождь" : "Дождя не будет"}
+                    sx={{ alignSelf: "flex-start" }}
+                  />
+                  <Chip
+                    color={recommendation.should_water_today ? "warning" : "default"}
+                    label={recommendation.should_water_today ? "По графику пора проверить грунт" : "По графику полив не нужен"}
                     sx={{ alignSelf: "flex-start" }}
                   />
                 </>
@@ -156,7 +167,13 @@ export function PlantDetailsPage() {
               Записать уход
             </Typography>
             <Stack component="form" spacing={2} onSubmit={submitLog}>
-              <TextField select label="Тип ухода" SelectProps={{ native: true }} {...logForm.register("task_type")}>
+              <TextField
+                select
+                label="Тип ухода"
+                InputLabelProps={{ shrink: true }}
+                SelectProps={{ native: true }}
+                {...logForm.register("task_type")}
+              >
                 <option value="water">Полив</option>
                 <option value="fertilize">Удобрение</option>
                 <option value="repot">Пересадка</option>
@@ -175,7 +192,13 @@ export function PlantDetailsPage() {
               Добавить задачу
             </Typography>
             <Stack component="form" spacing={2} onSubmit={submitTask}>
-              <TextField select label="Тип задачи" SelectProps={{ native: true }} {...taskForm.register("task_type")}>
+              <TextField
+                select
+                label="Тип задачи"
+                InputLabelProps={{ shrink: true }}
+                SelectProps={{ native: true }}
+                {...taskForm.register("task_type")}
+              >
                 <option value="water">Полив</option>
                 <option value="fertilize">Удобрение</option>
                 <option value="repot">Пересадка</option>

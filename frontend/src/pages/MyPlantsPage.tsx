@@ -91,10 +91,13 @@ export function MyPlantsPage() {
             <TextField
               select
               label="Вид"
+              InputLabelProps={{ shrink: true }}
               SelectProps={{ native: true }}
               {...form.register("species", { required: true })}
             >
-              <option value="">Выберите вид</option>
+              <option value="" disabled>
+                Выберите вид
+              </option>
               {species.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
@@ -102,7 +105,13 @@ export function MyPlantsPage() {
               ))}
             </TextField>
             <TextField label="Имя растения" {...form.register("nickname", { required: true })} />
-            <TextField select label="Место" SelectProps={{ native: true }} {...form.register("location_type")}>
+            <TextField
+              select
+              label="Место"
+              InputLabelProps={{ shrink: true }}
+              SelectProps={{ native: true }}
+              {...form.register("location_type")}
+            >
               <option value="indoor">В помещении</option>
               <option value="balcony">На балконе</option>
             </TextField>

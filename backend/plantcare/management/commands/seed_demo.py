@@ -22,7 +22,7 @@ DEMO_SPECIES = [
         "humidity": 40,
         "watering_interval_days": 14,
         "pet_safe": False,
-        "image_url": "https://images.unsplash.com/photo-1593482892290-f54927ae2b87?auto=format&fit=crop&w=900&q=80",
+        "image_url": "/plants/sansevieria.svg",
     },
     {
         "name": "Базилик",
