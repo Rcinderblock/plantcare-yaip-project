@@ -4,7 +4,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-plantcare-secret-key")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-plantcare-secret-key-that-is-long-enough")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = [
     host.strip()
@@ -93,10 +93,16 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+JWT_ACCESS_COOKIE = os.getenv("JWT_ACCESS_COOKIE", "plantcare_access")
+JWT_REFRESH_COOKIE = os.getenv("JWT_REFRESH_COOKIE", "plantcare_refresh")
+JWT_COOKIE_SECURE = os.getenv("JWT_COOKIE_SECURE", "0") == "1"
+JWT_COOKIE_SAMESITE = os.getenv("JWT_COOKIE_SAMESITE", "Lax")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "plantcare.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",

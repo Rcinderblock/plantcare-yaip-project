@@ -14,9 +14,7 @@ class PlantCareUser(HttpUser):
             "/api/auth/register/",
             json={"username": username, "email": f"{username}@example.com", "password": password},
         )
-        token_response = self.client.post("/api/auth/token/", json={"username": username, "password": password})
-        self.token = token_response.json()["access"]
-        self.headers = {"Authorization": f"Bearer {self.token}"}
+        self.client.post("/api/auth/token/", json={"username": username, "password": password})
         species = self.client.get("/api/species/").json()["results"][0]
         plant_response = self.client.post(
             "/api/plants/",
@@ -26,7 +24,6 @@ class PlantCareUser(HttpUser):
                 "location_type": "balcony",
                 "notes": "Created by Locust",
             },
-            headers=self.headers,
         )
         self.plant_id = plant_response.json()["id"]
 
@@ -36,16 +33,15 @@ class PlantCareUser(HttpUser):
 
     @task(3)
     def open_my_plants(self):
-        self.client.get("/api/plants/", headers=self.headers)
+        self.client.get("/api/plants/")
 
     @task(2)
     def open_calendar(self):
-        self.client.get("/api/care-tasks/", headers=self.headers)
+        self.client.get("/api/care-tasks/")
 
     @task(1)
     def create_care_log(self):
         self.client.post(
             "/api/care-logs/",
             json={"plant": self.plant_id, "task_type": "water", "notes": "Load test watering"},
-            headers=self.headers,
         )

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { apiRequest, getAccessToken, login, registerUser, setAccessToken } from "../api/client";
+import { apiRequest, login, logout, registerUser } from "../api/client";
 import type { User } from "../types/api";
 
 interface AuthContextValue {
@@ -9,27 +9,20 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (username: string, email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(Boolean(getAccessToken()));
+  const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
-    if (!getAccessToken()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
     try {
       const profile = await apiRequest<User>("/auth/me/");
       setUser(profile);
     } catch {
-      setAccessToken(null);
       setUser(null);
     } finally {
       setLoading(false);
@@ -42,11 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(
     async (username: string, password: string) => {
-      const tokenPair = await login(username, password);
-      setAccessToken(tokenPair.access);
-      await loadUser();
+      const result = await login(username, password);
+      setUser(result.user);
+      setLoading(false);
     },
-    [loadUser],
+    [],
   );
 
   const signUp = useCallback(
@@ -57,9 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [signIn],
   );
 
-  const signOut = useCallback(() => {
-    setAccessToken(null);
-    setUser(null);
+  const signOut = useCallback(async () => {
+    try {
+      await logout();
+    } finally {
+      setUser(null);
+      setLoading(false);
+    }
   }, []);
 
   const value = useMemo(

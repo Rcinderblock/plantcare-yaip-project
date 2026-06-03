@@ -11,6 +11,7 @@ PlantCare — итоговый проект по требованиям из `Т
 
 - Frontend: React, TypeScript, Vite, Material UI, React Hook Form.
 - Backend: Python, Django, Django REST Framework, Simple JWT, drf-spectacular.
+- Авторизация: JWT в `HttpOnly` cookies (`SameSite=Lax`), без хранения токенов в `localStorage`.
 - База данных: PostgreSQL в Docker, SQLite для локальной разработки без Docker.
 - Интеграции: Open-Meteo API.
 - Тесты: pytest, pytest-django, coverage; нагрузочные сценарии Locust.
@@ -87,6 +88,18 @@ species_name,nickname,location_type,watering_interval_days,notes
 ```
 
 `location_type` принимает значения `indoor` или `balcony`.
+
+## Безопасность авторизации
+
+После входа backend устанавливает два cookie:
+
+- `plantcare_access` — короткоживущий JWT access token.
+- `plantcare_refresh` — refresh token, ограниченный путем `/api/auth/token/refresh/`.
+
+Оба cookie имеют флаг `HttpOnly`, поэтому frontend JavaScript не может прочитать
+или украсть токены напрямую. `SameSite=Lax` снижает риск CSRF для cross-site
+POST-запросов. В продакшене при HTTPS нужно поставить `JWT_COOKIE_SECURE=1`,
+чтобы cookies передавались только по защищенному соединению.
 
 ## Основные страницы
 

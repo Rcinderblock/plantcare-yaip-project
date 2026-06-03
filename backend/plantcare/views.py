@@ -1,6 +1,7 @@
 import csv
 from io import TextIOWrapper
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -10,6 +11,9 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CareLog, CareTask, Collection, PlantSpecies, UserPlant
 from .serializers import (
@@ -24,6 +28,37 @@ from .serializers import (
 from .services import WeatherService
 
 
+def set_access_cookie(response, access_token):
+    max_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+    response.set_cookie(
+        settings.JWT_ACCESS_COOKIE,
+        str(access_token),
+        max_age=max_age,
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE,
+        samesite=settings.JWT_COOKIE_SAMESITE,
+        path="/",
+    )
+
+
+def set_refresh_cookie(response, refresh_token):
+    max_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+    response.set_cookie(
+        settings.JWT_REFRESH_COOKIE,
+        str(refresh_token),
+        max_age=max_age,
+        httponly=True,
+        secure=settings.JWT_COOKIE_SECURE,
+        samesite=settings.JWT_COOKIE_SAMESITE,
+        path="/api/auth/token/refresh/",
+    )
+
+
+def clear_auth_cookies(response):
+    response.delete_cookie(settings.JWT_ACCESS_COOKIE, path="/", samesite=settings.JWT_COOKIE_SAMESITE)
+    response.delete_cookie(settings.JWT_REFRESH_COOKIE, path="/api/auth/token/refresh/", samesite=settings.JWT_COOKIE_SAMESITE)
+
+
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -35,7 +70,72 @@ class RegisterView(APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
+class CookieTokenObtainPairView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request=TokenObtainPairSerializer,
+        responses=inline_serializer(
+            name="CookieTokenLoginResult",
+            fields={"user": UserSerializer(), "detail": drf_serializers.CharField()},
+        ),
+    )
+    def post(self, request):
+        serializer = TokenObtainPairSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        refresh = RefreshToken(serializer.validated_data["refresh"])
+        response = Response(
+            {"user": UserSerializer(serializer.user).data, "detail": "Сессия создана в HttpOnly cookies."}
+        )
+        set_access_cookie(response, refresh.access_token)
+        set_refresh_cookie(response, refresh)
+        return response
+
+
+class CookieTokenRefreshView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request=None,
+        responses=inline_serializer(
+            name="CookieTokenRefreshResult",
+            fields={"detail": drf_serializers.CharField()},
+        )
+    )
+    def post(self, request):
+        raw_refresh = request.COOKIES.get(settings.JWT_REFRESH_COOKIE)
+        if not raw_refresh:
+            raise InvalidToken("Refresh cookie is missing.")
+
+        try:
+            refresh = RefreshToken(raw_refresh)
+        except TokenError as exc:
+            raise InvalidToken("Refresh cookie is invalid.") from exc
+
+        response = Response({"detail": "Сессия обновлена."})
+        set_access_cookie(response, refresh.access_token)
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request=None,
+        responses=inline_serializer(
+            name="LogoutResult",
+            fields={"detail": drf_serializers.CharField()},
+        )
+    )
+    def post(self, request):
+        response = Response({"detail": "Сессия завершена."})
+        clear_auth_cookies(response)
+        return response
+
+
 class MeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     @extend_schema(responses=UserSerializer)
     def get(self, request):
         return Response(UserSerializer(request.user).data)
@@ -48,6 +148,7 @@ class PlantSpeciesViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class UserOwnedModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     owner_lookup = "owner"
 
     def get_queryset(self):
@@ -64,6 +165,7 @@ class UserPlantViewSet(UserOwnedModelViewSet):
 
 
 class CareTaskViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = CareTask.objects.select_related("plant", "plant__owner", "plant__species").all()
     serializer_class = CareTaskSerializer
 
@@ -89,6 +191,7 @@ class CareTaskViewSet(viewsets.ModelViewSet):
 
 
 class CareLogViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
     queryset = CareLog.objects.select_related("plant", "plant__owner").all()
     serializer_class = CareLogSerializer
 
@@ -114,6 +217,7 @@ class CollectionViewSet(UserOwnedModelViewSet):
 
 
 class PlantImportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser]
 
     @extend_schema(
@@ -178,6 +282,8 @@ class PlantImportView(APIView):
 
 
 class WeatherRecommendationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     @extend_schema(
         parameters=[
             OpenApiParameter("plant_id", int, required=True),

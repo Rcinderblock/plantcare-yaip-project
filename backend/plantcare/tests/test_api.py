@@ -38,12 +38,53 @@ def test_register_and_me_endpoint():
     )
     assert response.status_code == 201
 
-    user = get_user_model().objects.get(username="new-user")
-    client.force_authenticate(user=user)
+    login_response = client.post(
+        reverse("token_obtain_pair"),
+        {"username": "new-user", "password": "strong-pass"},
+        format="json",
+    )
+    assert login_response.status_code == 200
+    assert "plantcare_access" in login_response.cookies
+    assert "plantcare_refresh" in login_response.cookies
+    assert login_response.cookies["plantcare_access"]["httponly"]
+    assert login_response.cookies["plantcare_refresh"]["httponly"]
+    client.cookies.update(login_response.cookies)
+
     me = client.get(reverse("me"))
 
     assert me.status_code == 200
     assert me.data["email"] == "new@example.com"
+
+    logout_response = client.post(reverse("logout"))
+    assert logout_response.status_code == 200
+    assert logout_response.cookies["plantcare_access"]["max-age"] == 0
+
+
+@pytest.mark.django_db
+def test_refresh_cookie_issues_new_access_cookie():
+    user = get_user_model().objects.create_user(username="refresh-user", password="secret-pass")
+    client = APIClient()
+    login_response = client.post(
+        reverse("token_obtain_pair"),
+        {"username": user.username, "password": "secret-pass"},
+        format="json",
+    )
+    client.cookies.update(login_response.cookies)
+
+    refresh_response = client.post(reverse("token_refresh"))
+
+    assert refresh_response.status_code == 200
+    assert "plantcare_access" in refresh_response.cookies
+
+
+@pytest.mark.django_db
+def test_private_endpoints_reject_anonymous_users():
+    client = APIClient()
+
+    assert client.get(reverse("me")).status_code == 401
+    assert client.get("/api/plants/").status_code == 401
+    assert client.get("/api/care-tasks/").status_code == 401
+    assert client.get("/api/care-logs/").status_code == 401
 
 
 @pytest.mark.django_db
