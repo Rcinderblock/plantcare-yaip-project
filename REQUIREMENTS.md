@@ -45,7 +45,7 @@
 | **Тема:** тема должна быть согласована с лектором | [ ] Требует внешнего действия: тема `PlantCare` и стек подготовлены, но формально согласовать их может только студент/лектор. |
 | **Общее:** отдельные части приложения: Frontend, BackEnd и база данных | [x] Да. Есть `frontend` на React, `backend` на Django REST Framework и база SQLite локально/PostgreSQL в Docker Compose. |
 | **Общее:** HTTP-взаимодействие | [x] Да. Frontend работает с backend через REST API `/api/*`; проверено браузерным сценарием и `curl`. |
-| **Общее:** тесты хотя бы для одной части приложения | [x] Да. Backend покрыт `pytest`/`pytest-django`: 12 тестов проходят. |
+| **Общее:** тесты хотя бы для одной части приложения | [x] Да. Backend покрыт `pytest`/`pytest-django`: 15 тестов проходят. |
 | **Frontend:** минимум 4 отдельные страницы приложения | [x] Да. Реализованы каталог, мои растения, карточка растения, календарь, профиль/настройки и авторизация. |
 | **Frontend:** однотипный дизайн для всех страниц | [x] Да. Общий `AppShell`, Material UI, единая тема, навигация и карточная сетка. |
 | **Frontend:** минимум 3 формы заполнения данных | [x] Да. Есть формы входа/регистрации, добавления растения, записи ухода, создания задачи, создания коллекции и CSV-импорта. |
@@ -55,10 +55,10 @@
 | **Backend:** реализация на языке с WEB-фреймворком; стек согласовать с лектором | [x] Да по реализации: Python + Django REST Framework. Формальное согласование стека остается внешним действием. |
 | **Backend:** наличие комментариев в коде | [x] Да. Комментарии добавлены в неочевидной бизнес-логике погодных рекомендаций и CSV-импорта. |
 | **Backend:** наличие Unit-тестов | [x] Да. Есть unit/API-тесты моделей, сервиса погоды, прав доступа, many-to-many, CSV-импорта и OpenAPI. |
-| **Доп. баллы:** покрытие BackEnd тестами более 75% | [x] Да. `coverage report`: 91% по backend-коду приложения. |
+| **Доп. баллы:** покрытие BackEnd тестами более 75% | [x] Да. `coverage report`: 92% по backend-коду приложения. |
 | **Доп. баллы:** генерация кода или документации из кода через OpenAPI | [x] Да. `drf-spectacular`: `/api/schema/` и Swagger UI `/api/docs/`; схема проверена через `curl`. |
 | **Доп. баллы:** связь многие-ко-многим в базе данных | [x] Да. `UserPlant.collections` через `CollectionPlant`; создание коллекции проверено через браузер. |
-| **Доп. баллы:** упаковка проекта в Docker-образ | [x] Да. Добавлены `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, `nginx.conf`; `docker compose config` проходит. Сборка образов не запускалась, потому что локальный Docker daemon недоступен. |
+| **Доп. баллы:** упаковка проекта в Docker-образ | [x] Да. Добавлены `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml`, `nginx.conf`; `docker compose config` проходит, запуск выполняется командой `docker compose up --build`. |
 | **Доп. баллы:** верстка под телефоны | [x] Да. Используются responsive-навигация, drawer для мобильного меню, CSS-сетки `auto-fit` и breakpoints Material UI. |
 | **Доп. баллы:** интеграция с другим веб-сервисом | [x] Да. Backend интегрирован с Open-Meteo API; погодная подсказка отображалась в карточке растения. |
 | **Доп. баллы:** авторизация | [x] Да. Реализованы регистрация, JWT-login через `HttpOnly` cookies, refresh/logout, профиль `/auth/me/` и защищенные пользовательские данные. |
@@ -74,7 +74,7 @@
 
 Проверки:
 
-- `coverage run -m pytest && coverage report`: 12 passed, backend coverage 91%.
+- `coverage run -m pytest && coverage report`: 15 passed, backend coverage 92%.
 - `npm run build`: TypeScript и Vite production-сборка прошли успешно.
 - `docker compose config --quiet`: конфигурация валидна.
 - `curl http://localhost:8000/api/schema/`: OpenAPI-схема доступна.
