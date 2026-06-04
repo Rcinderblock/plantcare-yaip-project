@@ -50,12 +50,26 @@ export async function refreshSession() {
   });
 
   if (!response.ok) {
+    await clearSessionCookies();
     throw new Error("Сессия истекла, войдите заново");
   }
 }
 
 export async function logout() {
-  return apiRequest<{ detail: string }>("/auth/logout/", { method: "POST" }, false);
+  return clearSessionCookies();
+}
+
+async function clearSessionCookies() {
+  const response = await fetch(`${API_BASE_URL}/auth/logout/`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Не удалось завершить сессию");
+  }
+
+  return (await response.json()) as { detail: string };
 }
 
 export async function registerUser(username: string, email: string, password: string) {

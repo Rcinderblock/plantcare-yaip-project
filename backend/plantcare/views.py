@@ -61,6 +61,7 @@ def clear_auth_cookies(response):
 
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
@@ -72,6 +73,7 @@ class RegisterView(APIView):
 
 
 class CookieTokenObtainPairView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
@@ -94,6 +96,7 @@ class CookieTokenObtainPairView(APIView):
 
 
 class CookieTokenRefreshView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
@@ -119,6 +122,7 @@ class CookieTokenRefreshView(APIView):
 
 
 class LogoutView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
@@ -143,6 +147,7 @@ class MeView(APIView):
 
 
 class PlantSpeciesViewSet(viewsets.ReadOnlyModelViewSet):
+    authentication_classes = []
     queryset = PlantSpecies.objects.all()
     serializer_class = PlantSpeciesSerializer
     permission_classes = [permissions.AllowAny]

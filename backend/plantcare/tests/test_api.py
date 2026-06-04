@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 import pytest
 import requests
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -76,6 +77,29 @@ def test_refresh_cookie_issues_new_access_cookie():
 
     assert refresh_response.status_code == 200
     assert "plantcare_access" in refresh_response.cookies
+
+
+@pytest.mark.django_db
+def test_stale_access_cookie_does_not_block_public_endpoints(species):
+    client = APIClient()
+    client.cookies[settings.JWT_ACCESS_COOKIE] = "stale-token-from-previous-build"
+
+    species_response = client.get("/api/species/")
+    register_response = client.post(
+        reverse("register"),
+        {"username": "stale-cookie-user", "email": "stale@example.com", "password": "strong-pass"},
+        format="json",
+    )
+    login_response = client.post(
+        reverse("token_obtain_pair"),
+        {"username": "stale-cookie-user", "password": "strong-pass"},
+        format="json",
+    )
+
+    assert species_response.status_code == 200
+    assert register_response.status_code == 201
+    assert login_response.status_code == 200
+    assert settings.JWT_ACCESS_COOKIE in login_response.cookies
 
 
 @pytest.mark.django_db
