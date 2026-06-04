@@ -84,7 +84,7 @@ def test_weather_fetch_weather(monkeypatch):
         assert params["current"] == "temperature_2m,relative_humidity_2m,precipitation"
         assert params["daily"] == "precipitation_sum"
         assert params["forecast_days"] == 2
-        assert timeout == 4
+        assert timeout == 6
         return Response()
 
     monkeypatch.setattr("plantcare.services.requests.get", fake_get)

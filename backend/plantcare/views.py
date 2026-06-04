@@ -1,6 +1,7 @@
 import csv
 from io import TextIOWrapper
 
+import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -300,6 +301,7 @@ class WeatherRecommendationView(APIView):
                 "temperature_c": drf_serializers.FloatField(),
                 "humidity_percent": drf_serializers.IntegerField(),
                 "rain_expected": drf_serializers.BooleanField(),
+                "weather_available": drf_serializers.BooleanField(),
                 "weather_summary": drf_serializers.CharField(),
                 "message": drf_serializers.CharField(),
             },
@@ -310,6 +312,9 @@ class WeatherRecommendationView(APIView):
         latitude = float(request.query_params.get("latitude", 55.7558))
         longitude = float(request.query_params.get("longitude", 37.6173))
         service = WeatherService()
-        weather = service.fetch_weather(latitude, longitude)
-        recommendation = service.build_recommendation(plant, weather)
+        try:
+            weather = service.fetch_weather(latitude, longitude)
+            recommendation = service.build_recommendation(plant, weather)
+        except requests.RequestException:
+            recommendation = service.build_fallback_recommendation(plant)
         return Response(recommendation.__dict__)

@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Divider,
   FormControlLabel,
   Stack,
   Switch,
@@ -12,6 +13,7 @@ import {
 } from "@mui/material";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link as RouterLink } from "react-router-dom";
 
 import { apiRequest, unwrapResults } from "../api/client";
 import { PageHeader } from "../components/PageHeader";
@@ -139,47 +141,82 @@ export function ProfilePage() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Новая коллекция
-          </Typography>
-          <Box component="form" className="form-grid" onSubmit={submitCollection}>
-            <TextField label="Название" {...form.register("name", { required: true })} />
-            <TextField label="Описание" {...form.register("description")} />
+          <Stack spacing={2.5}>
             <Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                Растения в коллекции
+              <Typography variant="h5">Новая коллекция</Typography>
+              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                Коллекция — это личная группа ваших растений. Она появляется ниже в блоке "Мои коллекции", а не в каталоге:
+                каталог показывает общие виды растений для всех пользователей.
               </Typography>
-              <select multiple size={Math.max(3, Math.min(6, plants.length))} {...form.register("plant_ids")}>
-                {plants.map((plant) => (
-                  <option key={plant.id} value={plant.id}>
-                    {plant.nickname}
-                  </option>
-                ))}
-              </select>
             </Box>
-            <Button type="submit" variant="contained">
-              Создать коллекцию
-            </Button>
-          </Box>
+            <Box component="form" className="form-grid" onSubmit={submitCollection}>
+              <TextField label="Название" {...form.register("name", { required: true })} />
+              <TextField label="Описание" {...form.register("description")} />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Растения в коллекции
+                </Typography>
+                {plants.length > 0 ? (
+                  <select multiple size={Math.max(3, Math.min(6, plants.length))} {...form.register("plant_ids")}>
+                    {plants.map((plant) => (
+                      <option key={plant.id} value={plant.id}>
+                        {plant.nickname}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Typography color="text.secondary">Сначала добавьте растение в разделе "Мои растения".</Typography>
+                )}
+              </Box>
+              <Button type="submit" variant="contained" disabled={plants.length === 0}>
+                Создать коллекцию
+              </Button>
+            </Box>
+          </Stack>
         </CardContent>
       </Card>
 
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "center" }} sx={{ mb: 2 }}>
+        <Typography variant="h5">Мои коллекции</Typography>
+        <Chip label={`Коллекций: ${collections.length}`} sx={{ alignSelf: { xs: "flex-start", sm: "center" } }} />
+      </Stack>
       <Box className="card-grid">
-        {collections.map((collection) => (
-          <Card key={collection.id}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h6">{collection.name}</Typography>
-                <Typography color="text.secondary">{collection.description || "Без описания"}</Typography>
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {collection.plants.map((plant) => (
-                    <Chip key={plant.id} label={plant.nickname} />
-                  ))}
+        {collections.length > 0 ? (
+          collections.map((collection) => (
+            <Card key={collection.id}>
+              <CardContent>
+                <Stack spacing={1.5}>
+                  <Box>
+                    <Typography variant="h6">{collection.name}</Typography>
+                    <Typography color="text.secondary">{collection.description || "Без описания"}</Typography>
+                  </Box>
+                  <Divider />
+                  <Typography variant="body2" color="text.secondary">
+                    Растений в коллекции: {collection.plants.length}
+                  </Typography>
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    {collection.plants.length > 0 ? (
+                      collection.plants.map((plant) => (
+                        <Chip key={plant.id} label={plant.nickname} component={RouterLink} to={`/plants/${plant.id}`} clickable />
+                      ))
+                    ) : (
+                      <Typography color="text.secondary">В коллекции пока нет растений.</Typography>
+                    )}
+                  </Stack>
                 </Stack>
-              </Stack>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary">
+                Коллекций пока нет. Создайте первую, чтобы показать связь многие-ко-многим: одна коллекция может содержать
+                несколько растений, а одно растение может входить в разные коллекции.
+              </Typography>
             </CardContent>
           </Card>
-        ))}
+        )}
       </Box>
     </Box>
   );

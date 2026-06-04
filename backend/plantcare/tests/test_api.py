@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 import pytest
+import requests
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -187,6 +188,23 @@ def test_weather_recommendation_endpoint(auth_client, user, species, monkeypatch
     assert response.data["temperature_c"] == 18.2
     assert response.data["humidity_percent"] == 76
     assert response.data["rain_expected"] is True
+    assert response.data["weather_available"] is True
+
+
+@pytest.mark.django_db
+def test_weather_recommendation_falls_back_when_open_meteo_times_out(auth_client, user, species, monkeypatch):
+    plant = UserPlant.objects.create(owner=user, species=species, nickname="Комнатная монстера")
+
+    def raise_timeout(self, lat, lon):
+        raise requests.ReadTimeout("Open-Meteo timeout")
+
+    monkeypatch.setattr("plantcare.views.WeatherService.fetch_weather", raise_timeout)
+
+    response = auth_client.get(f"/api/weather/recommendation/?plant_id={plant.id}")
+
+    assert response.status_code == 200
+    assert response.data["weather_available"] is False
+    assert "Open-Meteo" in response.data["weather_summary"]
 
 
 @pytest.mark.django_db

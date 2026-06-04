@@ -116,7 +116,9 @@ npm run dev
    текстовая рекомендация.
 5. Создать задачу ухода в календаре.
 6. Отметить задачу выполненной и показать, что создается запись ухода.
-7. В профиле создать коллекцию, переключить тему, импортировать CSV.
+7. В профиле создать коллекцию и показать, что она появилась ниже в блоке
+   "Мои коллекции". В каталог она не попадает: каталог — общий справочник видов,
+   а коллекции — личные группы растений пользователя.
 8. Открыть `/api/docs/` и показать, что API документируется автоматически.
 
 ## 5. Backend
@@ -622,6 +624,7 @@ https://api.open-meteo.com/v1/forecast
 | `temperature_c` | температура |
 | `humidity_percent` | влажность |
 | `rain_expected` | ожидается ли дождь сегодня/завтра |
+| `weather_available` | удалось ли получить реальные данные Open-Meteo |
 | `weather_summary` | короткий текст: "скоро дождь", "дождя не ожидается" и т.д. |
 | `message` | итоговая рекомендация с учетом типа растения |
 
@@ -637,6 +640,10 @@ https://api.open-meteo.com/v1/forecast
 > Это демонстрирует внешнюю интеграцию и дает пользователю контекст. Для
 > комнатного растения дождь напрямую не поливает грунт, но температура и
 > влажность помогают понять, будет ли грунт сохнуть быстрее или медленнее.
+
+Если Open-Meteo не отвечает за timeout, backend теперь не падает с 500. Ручка
+возвращает fallback JSON с `weather_available=false`, текстом про недоступность
+Open-Meteo и решением по базовому графику полива.
 
 ## 13. CSV-импорт
 
@@ -713,14 +720,14 @@ cd backend
 Свежий результат от 2026-06-03:
 
 ```text
-15 passed in 1.90s
-TOTAL 432 statements, 36 missed, 92% coverage
+16 passed in 2.25s
+TOTAL 441 statements, 36 missed, 92% coverage
 ```
 
 Что покрывают тесты:
 
 - модели и расчет следующего полива;
-- WeatherService и погодную рекомендацию;
+- WeatherService, погодную рекомендацию и fallback при timeout Open-Meteo;
 - регистрацию/login/auth-доступ;
 - приватность пользовательских данных;
 - создание растений, задач, логов, коллекций;
@@ -870,7 +877,7 @@ Exit code: 0
 | Backend на web framework | Django + Django REST Framework |
 | Минимум 4 таблицы | PlantSpecies, UserPlant, CareTask, CareLog, Collection, CollectionPlant + auth_user |
 | Комментарии в коде | есть в погодной логике и CSV-импорте |
-| Unit/API tests | pytest/pytest-django |
+| Unit/API tests | pytest/pytest-django, свежий результат 16 passed |
 | Coverage >75% | свежий результат 92% |
 | OpenAPI | `/api/schema/`, `/api/docs/`, drf-spectacular |
 | Many-to-many | Collection <-> UserPlant через CollectionPlant |
@@ -953,10 +960,11 @@ double-submit схемой, потому что cookie-based auth требует
 
 ### "Что если Open-Meteo недоступен?"
 
-Сервис использует timeout 4 секунды и `raise_for_status()`. Если внешний API
-упадет, запрос погоды завершится ошибкой, а frontend не должен ломать всю
-карточку растения. Для production можно добавить cache, fallback-ответ и более
-мягкую обработку ошибок на backend.
+Сервис использует timeout 6 секунд и `raise_for_status()`. Если внешний API
+упадет или не ответит вовремя, backend ловит `requests.RequestException` и
+возвращает fallback-ответ: `weather_available=false`, текст "Open-Meteo
+временно не ответил" и решение по базовому графику. Для production можно
+добавить cache последнего успешного прогноза.
 
 ### "Что именно проверяло нагрузочное тестирование?"
 
@@ -981,7 +989,7 @@ PostgreSQL и логи.
 - добавить rate limiting на login/register/import;
 - включить blacklist/rotation refresh tokens;
 - добавить `validate_password` в serializer регистрации;
-- добавить cache/fallback для Open-Meteo;
+- добавить cache последнего успешного прогноза Open-Meteo;
 - расширить Locust до долгого теста с большим числом пользователей;
 - добавить мониторинг и structured logging.
 
@@ -998,7 +1006,6 @@ PostgreSQL и логи.
 > queryset по владельцу. В проекте есть каталог, растения пользователя, задачи
 > ухода, история ухода, коллекции many-to-many, CSV-импорт и интеграция с
 > Open-Meteo для погодных рекомендаций. Backend покрыт тестами: свежий прогон
-> 15 passed, coverage 92%. Для нагрузки есть Locust smoke-сценарий: последний
+> 16 passed, coverage 92%. Для нагрузки есть Locust smoke-сценарий: последний
 > запуск дал 7 запросов и 0 ошибок, но это именно smoke, не доказательство
 > бесконечной производительности.
-

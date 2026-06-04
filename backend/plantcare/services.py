@@ -26,6 +26,7 @@ class WateringRecommendation:
     temperature_c: float
     humidity_percent: int
     rain_expected: bool
+    weather_available: bool
     weather_summary: str
     message: str
 
@@ -44,7 +45,7 @@ class WeatherService:
                 "forecast_days": 2,
                 "timezone": "auto",
             },
-            timeout=4,
+            timeout=6,
         )
         response.raise_for_status()
         data = response.json()
@@ -79,6 +80,7 @@ class WeatherService:
                 temperature_c=weather.temperature_c,
                 humidity_percent=weather.humidity_percent,
                 rain_expected=weather.rain_expected,
+                weather_available=True,
                 weather_summary=summary,
                 message="Балконное растение можно не поливать сейчас: скоро дождь поможет с поливом.",
             )
@@ -103,8 +105,29 @@ class WeatherService:
             temperature_c=weather.temperature_c,
             humidity_percent=weather.humidity_percent,
             rain_expected=weather.rain_expected,
+            weather_available=True,
             weather_summary=summary,
             message=message,
+        )
+
+    def build_fallback_recommendation(self, plant) -> WateringRecommendation:
+        due_date = plant.next_watering_due().date()
+        should_water = due_date <= timezone.localdate()
+        return WateringRecommendation(
+            should_water_today=should_water,
+            next_watering_date=due_date.isoformat(),
+            precipitation_mm=0,
+            precipitation_tomorrow_mm=0,
+            temperature_c=0,
+            humidity_percent=0,
+            rain_expected=False,
+            weather_available=False,
+            weather_summary="Open-Meteo временно не ответил: показываем базовый график ухода.",
+            message=(
+                "По графику сегодня стоит проверить грунт."
+                if should_water
+                else "По базовому графику полив пока не нужен."
+            ),
         )
 
     def _build_weather_summary(self, weather: WeatherSnapshot) -> str:

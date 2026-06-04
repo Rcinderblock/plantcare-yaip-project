@@ -135,17 +135,23 @@ export function PlantDetailsPage() {
                 <>
                   <Typography fontWeight={700}>{recommendation.weather_summary}</Typography>
                   <Typography color="text.secondary">{recommendation.message}</Typography>
-                  <Stack direction="row" gap={1} flexWrap="wrap">
-                    <Chip label={`Температура ${recommendation.temperature_c.toFixed(1)} °C`} />
-                    <Chip label={`Влажность ${recommendation.humidity_percent}%`} />
-                    <Chip label={`Осадки сегодня ${recommendation.precipitation_mm.toFixed(1)} мм`} />
-                    <Chip label={`Осадки завтра ${recommendation.precipitation_tomorrow_mm.toFixed(1)} мм`} />
-                  </Stack>
-                  <Chip
-                    color={recommendation.rain_expected ? "info" : "success"}
-                    label={recommendation.rain_expected ? "Скоро дождь" : "Дождя не будет"}
-                    sx={{ alignSelf: "flex-start" }}
-                  />
+                  {recommendation.weather_available ? (
+                    <>
+                      <Stack direction="row" gap={1} flexWrap="wrap">
+                        <Chip label={`Температура ${recommendation.temperature_c.toFixed(1)} °C`} />
+                        <Chip label={`Влажность ${recommendation.humidity_percent}%`} />
+                        <Chip label={`Осадки сегодня ${recommendation.precipitation_mm.toFixed(1)} мм`} />
+                        <Chip label={`Осадки завтра ${recommendation.precipitation_tomorrow_mm.toFixed(1)} мм`} />
+                      </Stack>
+                      <Chip
+                        color={recommendation.rain_expected ? "info" : "success"}
+                        label={recommendation.rain_expected ? "Скоро дождь" : "Дождя не будет"}
+                        sx={{ alignSelf: "flex-start" }}
+                      />
+                    </>
+                  ) : (
+                    <Chip color="default" label="Базовый график без погодных данных" sx={{ alignSelf: "flex-start" }} />
+                  )}
                   <Chip
                     color={recommendation.should_water_today ? "warning" : "default"}
                     label={recommendation.should_water_today ? "По графику пора проверить грунт" : "По графику полив не нужен"}

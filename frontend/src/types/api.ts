@@ -80,6 +80,7 @@ export interface WeatherRecommendation {
   temperature_c: number;
   humidity_percent: number;
   rain_expected: boolean;
+  weather_available: boolean;
   weather_summary: string;
   message: string;
 }
