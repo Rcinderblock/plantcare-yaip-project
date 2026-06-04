@@ -4,8 +4,9 @@ import pytest
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.staticfiles import finders
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.urls import reverse
+from django.urls import resolve, reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -237,3 +238,11 @@ def test_openapi_schema_is_generated(auth_client):
 
     assert response.status_code == 200
     assert "PlantCare API" in response.content.decode()
+
+
+@pytest.mark.skipif(not settings.DEBUG, reason="Static files are served by Django only in local debug mode.")
+def test_admin_static_css_is_available():
+    match = resolve("/static/admin/css/base.css")
+
+    assert "static" in match.route
+    assert finders.find("admin/css/base.css")

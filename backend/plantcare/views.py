@@ -5,7 +5,7 @@ import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
 from rest_framework import permissions, serializers as drf_serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -64,7 +64,17 @@ class RegisterView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
+    @extend_schema(
+        tags=["Авторизация"],
+        summary="Регистрация пользователя",
+        description=(
+            "Создает нового пользователя Django. В теле запроса передаются username, email и password. "
+            "Пароль сохраняется не в открытом виде: Django хеширует его через create_user. "
+            "После регистрации frontend обычно сразу вызывает ручку входа, чтобы получить HttpOnly cookies."
+        ),
+        request=RegisterSerializer,
+        responses={201: UserSerializer},
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -77,6 +87,13 @@ class CookieTokenObtainPairView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
+        tags=["Авторизация"],
+        summary="Вход и создание JWT-cookie сессии",
+        description=(
+            "Проверяет username и password через SimpleJWT. Если данные верные, backend создает refresh token, "
+            "из него получает access token и кладет оба токена в HttpOnly cookies: plantcare_access и "
+            "plantcare_refresh. Токены не возвращаются в JSON, чтобы frontend не хранил их в localStorage."
+        ),
         request=TokenObtainPairSerializer,
         responses=inline_serializer(
             name="CookieTokenLoginResult",
@@ -100,6 +117,13 @@ class CookieTokenRefreshView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
+        tags=["Авторизация"],
+        summary="Обновление access token",
+        description=(
+            "Берет refresh token из cookie plantcare_refresh и, если он валиден, выпускает новый access token "
+            "в cookie plantcare_access. Используется frontend-клиентом автоматически, когда приватный запрос "
+            "получил 401 из-за истекшего access token."
+        ),
         request=None,
         responses=inline_serializer(
             name="CookieTokenRefreshResult",
@@ -126,6 +150,12 @@ class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
+        tags=["Авторизация"],
+        summary="Выход из аккаунта",
+        description=(
+            "Удаляет auth cookies plantcare_access и plantcare_refresh на стороне браузера. "
+            "Ручка доступна без авторизации, чтобы можно было очистить даже старые или испорченные cookies."
+        ),
         request=None,
         responses=inline_serializer(
             name="LogoutResult",
@@ -141,11 +171,38 @@ class LogoutView(APIView):
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=UserSerializer)
+    @extend_schema(
+        tags=["Авторизация"],
+        summary="Текущий пользователь",
+        description=(
+            "Возвращает профиль пользователя, определенного по JWT access token из HttpOnly cookie. "
+            "Frontend вызывает эту ручку при загрузке приложения, чтобы понять, есть ли активная сессия."
+        ),
+        responses=UserSerializer,
+    )
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Каталог видов"],
+        summary="Получить список видов растений",
+        description=(
+            "Публичная ручка каталога. Возвращает справочник видов растений: название, латинское название, "
+            "описание, свет, влажность, базовый интервал полива, безопасность для животных и image_url. "
+            "Эти данные используются на странице каталога и в форме добавления личного растения."
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=["Каталог видов"],
+        summary="Получить один вид растения",
+        description=(
+            "Публичная ручка для просмотра конкретного вида растения из общего каталога по id. "
+            "Не зависит от пользователя и не требует авторизации."
+        ),
+    ),
+)
 class PlantSpeciesViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = []
     queryset = PlantSpecies.objects.all()
@@ -162,6 +219,53 @@ class UserOwnedModelViewSet(viewsets.ModelViewSet):
         return queryset.filter(**{self.owner_lookup: self.request.user})
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Мои растения"],
+        summary="Список моих растений",
+        description=(
+            "Возвращает только растения текущего пользователя. Фильтрация выполняется на backend по request.user, "
+            "поэтому пользователь не может увидеть растения других аккаунтов."
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=["Мои растения"],
+        summary="Получить мое растение",
+        description=(
+            "Возвращает карточку одного растения текущего пользователя: выбранный вид, имя, место, заметки, "
+            "последний полив и рассчитанную дату следующего полива."
+        ),
+    ),
+    create=extend_schema(
+        tags=["Мои растения"],
+        summary="Добавить растение",
+        description=(
+            "Создает личное растение текущего пользователя. Поле owner не передается с frontend: backend сам "
+            "ставит owner=request.user, чтобы нельзя было создать растение от имени другого пользователя."
+        ),
+    ),
+    update=extend_schema(
+        tags=["Мои растения"],
+        summary="Полностью обновить растение",
+        description=(
+            "Полностью заменяет данные личного растения. Доступ разрешен только владельцу записи."
+        ),
+    ),
+    partial_update=extend_schema(
+        tags=["Мои растения"],
+        summary="Частично обновить растение",
+        description=(
+            "Обновляет только переданные поля личного растения, например заметки или интервал полива."
+        ),
+    ),
+    destroy=extend_schema(
+        tags=["Мои растения"],
+        summary="Удалить растение",
+        description=(
+            "Удаляет личное растение текущего пользователя вместе с зависимыми задачами и логами ухода."
+        ),
+    ),
+)
 class UserPlantViewSet(UserOwnedModelViewSet):
     queryset = UserPlant.objects.select_related("species", "owner").all()
     serializer_class = UserPlantSerializer
@@ -170,6 +274,51 @@ class UserPlantViewSet(UserOwnedModelViewSet):
         serializer.save(owner=self.request.user)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Список задач ухода",
+        description=(
+            "Возвращает задачи ухода только для растений текущего пользователя. Используется календарем ухода."
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Получить задачу ухода",
+        description="Возвращает одну задачу ухода, если она относится к растению текущего пользователя.",
+    ),
+    create=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Создать задачу ухода",
+        description=(
+            "Создает задачу ухода: полив, удобрение, пересадка или обрезка. Backend проверяет, что plant "
+            "принадлежит текущему пользователю; для чужого растения вернется 403."
+        ),
+    ),
+    update=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Полностью обновить задачу ухода",
+        description="Полностью обновляет задачу ухода текущего пользователя.",
+    ),
+    partial_update=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Частично обновить задачу ухода",
+        description="Обновляет отдельные поля задачи, например дату, статус или заметки.",
+    ),
+    destroy=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Удалить задачу ухода",
+        description="Удаляет задачу ухода, если она относится к растению текущего пользователя.",
+    ),
+    complete=extend_schema(
+        tags=["Задачи ухода"],
+        summary="Отметить задачу выполненной",
+        description=(
+            "Переводит задачу в статус done и автоматически создает CareLog с фактом выполнения. "
+            "Если задача была поливом, backend дополнительно обновляет last_watered_at у растения."
+        ),
+    ),
+)
 class CareTaskViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = CareTask.objects.select_related("plant", "plant__owner", "plant__species").all()
@@ -196,6 +345,44 @@ class CareTaskViewSet(viewsets.ModelViewSet):
         return Response({"task": CareTaskSerializer(task).data, "log": CareLogSerializer(log).data})
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Список записей ухода",
+        description=(
+            "Возвращает журнал выполненных действий только по растениям текущего пользователя. "
+            "Записи отсортированы от новых к старым."
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Получить запись ухода",
+        description="Возвращает одну запись ухода, если она относится к растению текущего пользователя.",
+    ),
+    create=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Добавить запись ухода",
+        description=(
+            "Добавляет факт выполненного ухода вручную. Backend проверяет владельца растения. "
+            "Если запись имеет тип water, last_watered_at у растения обновляется временем записи."
+        ),
+    ),
+    update=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Полностью обновить запись ухода",
+        description="Полностью обновляет запись журнала ухода текущего пользователя.",
+    ),
+    partial_update=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Частично обновить запись ухода",
+        description="Обновляет отдельные поля записи ухода, например заметку или дату выполнения.",
+    ),
+    destroy=extend_schema(
+        tags=["Журнал ухода"],
+        summary="Удалить запись ухода",
+        description="Удаляет запись журнала ухода текущего пользователя.",
+    ),
+)
 class CareLogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = CareLog.objects.select_related("plant", "plant__owner").all()
@@ -214,6 +401,44 @@ class CareLogViewSet(viewsets.ModelViewSet):
             plant.save(update_fields=["last_watered_at"])
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Коллекции"],
+        summary="Список моих коллекций",
+        description=(
+            "Возвращает коллекции текущего пользователя вместе с растениями внутри них. "
+            "Коллекции нужны для группировки личных растений, например 'Гостиная' или 'Балкон'."
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=["Коллекции"],
+        summary="Получить коллекцию",
+        description="Возвращает одну коллекцию текущего пользователя и список растений внутри нее.",
+    ),
+    create=extend_schema(
+        tags=["Коллекции"],
+        summary="Создать коллекцию",
+        description=(
+            "Создает коллекцию текущего пользователя. Для привязки растений передается plant_ids; serializer "
+            "разрешает выбрать только растения владельца текущей сессии."
+        ),
+    ),
+    update=extend_schema(
+        tags=["Коллекции"],
+        summary="Полностью обновить коллекцию",
+        description="Полностью обновляет коллекцию и, если передан plant_ids, заменяет состав растений.",
+    ),
+    partial_update=extend_schema(
+        tags=["Коллекции"],
+        summary="Частично обновить коллекцию",
+        description="Обновляет отдельные поля коллекции или ее состав через plant_ids.",
+    ),
+    destroy=extend_schema(
+        tags=["Коллекции"],
+        summary="Удалить коллекцию",
+        description="Удаляет коллекцию текущего пользователя. Сами растения при этом не удаляются.",
+    ),
+)
 class CollectionViewSet(UserOwnedModelViewSet):
     queryset = Collection.objects.prefetch_related("plants", "plants__species").all()
     serializer_class = CollectionSerializer
@@ -227,7 +452,13 @@ class PlantImportView(APIView):
     parser_classes = [MultiPartParser]
 
     @extend_schema(
-        description="CSV columns: species_name,nickname,location_type,watering_interval_days,notes",
+        tags=["Импорт"],
+        summary="Импортировать растения из CSV",
+        description=(
+            "Принимает CSV-файл в multipart-поле file. Минимальные обязательные колонки: species_name и nickname. "
+            "Дополнительно поддерживаются location_type, watering_interval_days и notes. Если вида растения еще "
+            "нет в каталоге, backend создаст его автоматически с базовым описанием."
+        ),
         request={"multipart/form-data": {"type": "object", "properties": {"file": {"type": "string", "format": "binary"}}}},
         responses={
             201: inline_serializer(
@@ -291,6 +522,15 @@ class WeatherRecommendationView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
+        tags=["Погода"],
+        summary="Получить погодную рекомендацию по поливу",
+        description=(
+            "Строит рекомендацию по поливу для растения текущего пользователя. Ручка берет plant_id, а latitude "
+            "и longitude опциональны; по умолчанию используются координаты Москвы. Backend вызывает Open-Meteo, "
+            "получает температуру, влажность и осадки. Для балконных растений дождь может отложить полив. "
+            "Для комнатных растений погода показывается как контекст, но решение остается по графику ухода. "
+            "Если Open-Meteo не отвечает, возвращается fallback-рекомендация с weather_available=false."
+        ),
         parameters=[
             OpenApiParameter("plant_id", int, required=True),
             OpenApiParameter("latitude", float, required=False),
