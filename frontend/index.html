@@ -8,9 +8,12 @@
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#dashboard" data-nav="dashboard">PlantCare</a>
+      <a class="brand" href="#dashboard" data-nav="dashboard" aria-label="PlantCare">
+        <span class="brand-mark">P</span>
+        <span>PlantCare</span>
+      </a>
       <nav class="nav">
-        <button data-nav="dashboard">Главная</button>
+        <button data-nav="dashboard">Каталог</button>
         <button data-nav="plants">Мои растения</button>
         <button data-nav="calendar">Календарь</button>
         <button data-nav="profile">Профиль</button>
@@ -23,18 +26,28 @@
     </header>
 
     <main class="container">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Уход за растениями без лишней архитектурной магии</p>
-          <h1>PlantCare помогает вести растения, календарь ухода и погодные подсказки</h1>
+      <section class="hero" id="hero-section">
+        <div class="hero-copy">
+          <p class="eyebrow">Персональный уход за растениями</p>
+          <h1>Уход за растениями с календарем и погодными подсказками</h1>
           <p class="lead">
-            Backend работает на Django REST Framework и PostgreSQL, frontend — обычные статические HTML/CSS/JS-файлы,
-            которые отдает nginx без Node.js в контейнере.
+            Добавляйте свои растения, ведите историю ухода, собирайте коллекции и сверяйте полив с погодой.
+            Лаконичный интерфейс помогает быстро показать весь сценарий: от регистрации до карточки ухода.
           </p>
+          <div class="hero-actions">
+            <button class="button primary" data-nav="plants">Добавить растение</button>
+            <button class="button ghost" data-nav="dashboard">Открыть каталог</button>
+          </div>
         </div>
-        <div class="panel">
-          <h2>Быстрая проверка</h2>
-          <p id="health-message">Загрузите статистику и каталог, чтобы увидеть связь frontend → API → PostgreSQL.</p>
+        <div class="hero-card">
+          <span class="badge">Open-Meteo + Wikipedia</span>
+          <h2>Живая карточка ухода</h2>
+          <p id="health-message">Загружаем каталог, статистику и состояние API...</p>
+          <div class="mini-list">
+            <span>HttpOnly cookies</span>
+            <span>PostgreSQL</span>
+            <span>Django REST Framework</span>
+          </div>
           <button class="button primary" id="refresh-all-button">Обновить данные</button>
         </div>
       </section>
@@ -42,15 +55,15 @@
       <section class="page active" id="dashboard-page">
         <div class="section-title">
           <div>
-            <p class="eyebrow">Статистика и каталог</p>
-            <h2>Обзор проекта</h2>
+            <p class="eyebrow">Справочник</p>
+            <h2>Каталог растений</h2>
           </div>
-          <span class="badge">PostgreSQL + DRF + Open-Meteo + Wikipedia</span>
+          <span class="badge">Статистика берется из backend API</span>
         </div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="section-title compact">
           <h2>Каталог видов</h2>
-          <p>Общий справочник растений. Личные растения создаются отдельно и видны только владельцу.</p>
+          <p>Общий справочник растений. Личные растения создаются отдельно и доступны только владельцу.</p>
         </div>
         <div class="grid" id="species-grid"></div>
       </section>
@@ -59,12 +72,25 @@
         <div class="section-title">
           <div>
             <p class="eyebrow">Авторизация</p>
-            <h2>Вход и регистрация</h2>
+            <h2 id="auth-title">Вход в аккаунт</h2>
           </div>
         </div>
-        <div class="two-columns">
-          <form class="panel form" id="login-form">
-            <h3>Войти</h3>
+        <div class="auth-layout">
+          <aside class="auth-info panel">
+            <span class="badge">Без localStorage</span>
+            <h3>Сессия хранится в HttpOnly cookies</h3>
+            <p>
+              Frontend отправляет запросы с <code>credentials: "include"</code>, а JWT не доступен JavaScript-коду страницы.
+              Это удобно показывать преподавателю через cookies в DevTools.
+            </p>
+          </aside>
+          <div class="auth-card panel">
+            <div class="segmented-control" role="tablist" aria-label="Выбор режима авторизации">
+              <button class="active" type="button" data-auth-tab="login">Вход</button>
+              <button type="button" data-auth-tab="register">Регистрация</button>
+            </div>
+            <form class="form auth-form" id="login-form" data-auth-panel="login">
+            <h3>Рады видеть снова</h3>
             <label>
               Логин
               <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
@@ -75,7 +101,7 @@
             </label>
             <button class="button primary" type="submit">Войти</button>
           </form>
-          <form class="panel form" id="register-form">
+            <form class="form auth-form" id="register-form" data-auth-panel="register" hidden>
             <h3>Создать аккаунт</h3>
             <p class="muted">Логин: 3-30 символов. Пароль: 8-128 символов.</p>
             <label>
@@ -92,6 +118,7 @@
             </label>
             <button class="button primary" type="submit">Зарегистрироваться</button>
           </form>
+          </div>
         </div>
         <p class="message" id="auth-message"></p>
       </section>

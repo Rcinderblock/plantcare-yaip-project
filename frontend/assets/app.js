@@ -8,6 +8,7 @@ const state = {
   collections: [],
   stats: null,
   encyclopedia: new Map(),
+  authMode: "login",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -150,9 +151,26 @@ async function fetchAll(path) {
 function setActivePage(page) {
   const privatePages = new Set(["plants", "calendar", "profile"]);
   const nextPage = privatePages.has(page) && !state.user ? "auth" : page;
+  const hero = $("#hero-section");
+  if (hero) hero.hidden = nextPage !== "dashboard";
   $$(".page").forEach((node) => node.classList.toggle("active", node.id === `${nextPage}-page`));
   $$("[data-nav]").forEach((node) => node.classList.toggle("active", node.dataset.nav === nextPage));
   history.replaceState(null, "", `#${nextPage}`);
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode === "register" ? "register" : "login";
+  const isRegister = state.authMode === "register";
+  const title = $("#auth-title");
+  if (title) title.textContent = isRegister ? "Создание аккаунта" : "Вход в аккаунт";
+  $$("[data-auth-tab]").forEach((node) => {
+    node.classList.toggle("active", node.dataset.authTab === state.authMode);
+    node.setAttribute("aria-selected", String(node.dataset.authTab === state.authMode));
+  });
+  $$("[data-auth-panel]").forEach((node) => {
+    node.hidden = node.dataset.authPanel !== state.authMode;
+  });
+  showMessage("auth-message", "");
 }
 
 function renderSession() {
@@ -677,6 +695,13 @@ function bindClicks() {
       return;
     }
 
+    const authTab = event.target.closest("[data-auth-tab]");
+    if (authTab) {
+      event.preventDefault();
+      setAuthMode(authTab.dataset.authTab);
+      return;
+    }
+
     const encyclopediaButton = event.target.closest("[data-encyclopedia]");
     if (encyclopediaButton) {
       await loadEncyclopedia(Number(encyclopediaButton.dataset.encyclopedia));
@@ -695,7 +720,10 @@ function bindClicks() {
     }
   });
 
-  $("#login-open-button").addEventListener("click", () => setActivePage("auth"));
+  $("#login-open-button").addEventListener("click", () => {
+    setAuthMode("login");
+    setActivePage("auth");
+  });
   $("#refresh-all-button").addEventListener("click", loadEverything);
   $("#reload-plants-button").addEventListener("click", loadPrivateData);
   $("#logout-button").addEventListener("click", async () => {
@@ -714,6 +742,7 @@ async function init() {
   $('#task-form input[name="due_date"]').value = todayIso();
   bindClicks();
   bindForms();
+  setAuthMode("login");
   renderSession();
   setActivePage((location.hash || "#dashboard").slice(1));
   await loadSession();
