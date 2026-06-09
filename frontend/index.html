@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PlantCare</title>
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610" />
   </head>
   <body>
     <header class="topbar">
@@ -29,24 +29,24 @@
       <section class="hero" id="hero-section">
         <div class="hero-copy">
           <p class="eyebrow">PlantCare для дома</p>
-          <h1>Помогает растениям жить по расписанию, а вам не забывать про уход</h1>
-          <p class="lead">
-            Соберите свой домашний сад, получайте подсказки по поливу, смотрите прогноз погоды и храните историю ухода
-            в одном спокойном и понятном интерфейсе.
-          </p>
+          <h1>Ваш домашний сад под контролем</h1>
+          <p class="lead">Добавьте растение. PlantCare подскажет, когда поливать, и сохранит историю ухода.</p>
           <div class="hero-actions">
             <button class="button primary" data-nav="plants">Начать уход</button>
             <button class="button ghost" data-nav="dashboard">Открыть каталог</button>
           </div>
         </div>
         <div class="hero-card garden-preview">
-          <span class="badge">Сегодня</span>
-          <h2>Монстера у окна</h2>
-          <p id="health-message">Проверяем ближайшие задачи и погодные условия...</p>
+          <div class="plant-orb" aria-hidden="true"></div>
+          <div class="preview-head">
+            <span class="badge">Сегодня</span>
+            <h2>Монстера у окна</h2>
+          </div>
+          <p id="health-message">Готовим личный график ухода...</p>
           <div class="care-highlights">
             <div>
               <strong>Полив</strong>
-              <span>Проверьте грунт вечером</span>
+              <span>Проверить грунт вечером</span>
             </div>
             <div>
               <strong>Погода</strong>
@@ -62,38 +62,36 @@
       </section>
 
       <section class="page active" id="dashboard-page">
-        <div class="section-title">
+        <section class="flow-panel" aria-labelledby="flow-title">
           <div>
-            <p class="eyebrow">Возможности</p>
-            <h2>Все для спокойного ухода</h2>
+            <h2 id="flow-title">Как это работает</h2>
+            <p>Три шага вместо таблиц и заметок в телефоне.</p>
           </div>
-          <span class="badge">Каталог, календарь и личные коллекции</span>
-        </div>
-        <div class="feature-grid">
-          <article class="feature-card">
-            <span>01</span>
-            <h3>Персональный график</h3>
-            <p>Добавьте растение, укажите место и интервал полива. PlantCare подскажет, когда пора проверить грунт.</p>
-          </article>
-          <article class="feature-card">
-            <span>02</span>
-            <h3>Погода рядом с уходом</h3>
-            <p>В карточке растения видно температуру, влажность и осадки, чтобы не поливать вслепую.</p>
-          </article>
-          <article class="feature-card">
-            <span>03</span>
-            <h3>Знания о растении</h3>
-            <p>Краткая справка помогает быстро вспомнить особенности вида и открыть внешний источник.</p>
-          </article>
-        </div>
+          <ol class="step-flow">
+            <li>
+              <span>1</span>
+              <strong>Выберите вид</strong>
+              <small>из каталога</small>
+            </li>
+            <li>
+              <span>2</span>
+              <strong>Добавьте растение</strong>
+              <small>с местом и заметками</small>
+            </li>
+            <li>
+              <span>3</span>
+              <strong>Отмечайте уход</strong>
+              <small>в календаре</small>
+            </li>
+          </ol>
+        </section>
         <div class="section-title compact">
           <h2>PlantCare в цифрах</h2>
-          <p>Живые показатели сервиса: сколько растений уже добавлено, сколько записей ухода сохранено и сколько видов есть в каталоге.</p>
         </div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="section-title compact">
-          <h2>Каталог видов</h2>
-          <p>Выберите вид из справочника, а затем добавьте свое растение в личный сад.</p>
+          <h2>Популярные виды</h2>
+          <p>Откройте справку по виду или добавьте растение в личный сад после входа.</p>
         </div>
         <div class="grid" id="species-grid"></div>
       </section>
@@ -270,6 +268,6 @@
       </section>
     </main>
 
-    <script src="/assets/app.js"></script>
+    <script src="/assets/app.js?v=20260610"></script>
   </body>
 </html>

@@ -18,22 +18,18 @@ const STAT_CARDS = [
   {
     key: "users",
     label: "садоводов с нами",
-    text: "создали личный кабинет для ухода за растениями",
   },
   {
     key: "plants",
     label: "растений под уходом",
-    text: "добавлены в личные сады пользователей",
   },
   {
     key: "care_logs",
     label: "записей ухода",
-    text: "помогают помнить, что уже было сделано",
   },
   {
     key: "species",
     label: "видов в каталоге",
-    text: "можно выбрать как основу для своего растения",
   },
 ];
 
@@ -212,7 +208,6 @@ function renderStats() {
     <article class="stat-card">
       <strong>${Number(state.stats[item.key] ?? 0)}</strong>
       <span>${item.label}</span>
-      <p>${item.text}</p>
     </article>
   `).join("");
 }
