@@ -218,8 +218,7 @@ code {
 
 .hero-actions,
 .inline-actions,
-.chips,
-.mini-list {
+.chips {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -230,17 +229,52 @@ code {
   margin-top: 26px;
 }
 
-.mini-list {
+.garden-preview {
+  position: relative;
+  min-height: 360px;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(47, 125, 53, 0.2), transparent 12rem),
+    linear-gradient(160deg, #ffffff 0%, #f3faf0 100%);
+}
+
+.garden-preview::after {
+  content: "";
+  position: absolute;
+  right: -38px;
+  bottom: -46px;
+  width: 190px;
+  height: 190px;
+  border-radius: 48% 52% 44% 56%;
+  background:
+    radial-gradient(circle at 34% 34%, rgba(255, 255, 255, 0.85), transparent 20%),
+    linear-gradient(135deg, rgba(47, 125, 53, 0.2), rgba(0, 137, 123, 0.24));
+}
+
+.care-highlights {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 12px;
   margin: 18px 0 22px;
 }
 
-.mini-list span {
-  border-radius: 999px;
-  background: var(--paper-soft);
+.care-highlights div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(191, 213, 192, 0.72);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 13px 14px;
+  backdrop-filter: blur(12px);
+}
+
+.care-highlights strong {
   color: var(--primary-dark);
-  padding: 8px 11px;
-  font-size: 0.88rem;
-  font-weight: 800;
+}
+
+.care-highlights span {
+  color: var(--muted);
+  font-size: 0.94rem;
 }
 
 .eyebrow {
@@ -305,6 +339,45 @@ code {
   color: var(--muted);
 }
 
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.feature-card {
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(243, 250, 240, 0.92));
+  box-shadow: var(--shadow-soft);
+  padding: 22px;
+}
+
+.feature-card span {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--paper-soft);
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.feature-card h3 {
+  margin: 18px 0 8px;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .badge,
 .chip {
   display: inline-flex;
@@ -347,6 +420,12 @@ code {
   margin-top: 8px;
   color: var(--muted);
   font-weight: 800;
+}
+
+.stat-card p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .card {

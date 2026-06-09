@@ -14,14 +14,28 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-const LABELS = {
-  species: "Виды",
-  plants: "Растения",
-  care_tasks: "Задачи",
-  care_logs: "История",
-  collections: "Коллекции",
-  users: "Пользователи",
-};
+const STAT_CARDS = [
+  {
+    key: "users",
+    label: "садоводов с нами",
+    text: "создали личный кабинет для ухода за растениями",
+  },
+  {
+    key: "plants",
+    label: "растений под уходом",
+    text: "добавлены в личные сады пользователей",
+  },
+  {
+    key: "care_logs",
+    label: "записей ухода",
+    text: "помогают помнить, что уже было сделано",
+  },
+  {
+    key: "species",
+    label: "видов в каталоге",
+    text: "можно выбрать как основу для своего растения",
+  },
+];
 
 const TASK_LABELS = {
   water: "Полив",
@@ -191,13 +205,14 @@ function renderSession() {
 function renderStats() {
   const grid = $("#stats-grid");
   if (!state.stats) {
-    grid.innerHTML = `<div class="empty">Статистика еще не загружена.</div>`;
+    grid.innerHTML = `<div class="empty">Показатели скоро появятся.</div>`;
     return;
   }
-  grid.innerHTML = Object.entries(LABELS).map(([key, label]) => `
+  grid.innerHTML = STAT_CARDS.map((item) => `
     <article class="stat-card">
-      <strong>${Number(state.stats[key] ?? 0)}</strong>
-      <span>${label}</span>
+      <strong>${Number(state.stats[item.key] ?? 0)}</strong>
+      <span>${item.label}</span>
+      <p>${item.text}</p>
     </article>
   `).join("");
 }
@@ -212,7 +227,7 @@ function speciesImageMarkup(species) {
 function renderSpecies() {
   const grid = $("#species-grid");
   if (!state.species.length) {
-    grid.innerHTML = `<div class="empty">Каталог пуст. Проверьте seed_demo на backend.</div>`;
+    grid.innerHTML = `<div class="empty">Каталог пока пуст. Скоро здесь появятся растения.</div>`;
     return;
   }
   grid.innerHTML = state.species.map((item) => `
@@ -334,7 +349,7 @@ async function loadPublicData() {
   renderStats();
   renderSpecies();
   fillSelects();
-  $("#health-message").textContent = "Статистика и каталог успешно загружены из backend API.";
+  $("#health-message").textContent = "Выберите растение из каталога, и PlantCare соберет для него личный график ухода.";
 }
 
 async function loadPrivateData() {

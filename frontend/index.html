@@ -14,7 +14,7 @@
       </a>
       <nav class="nav">
         <button data-nav="dashboard">Каталог</button>
-        <button data-nav="plants">Мои растения</button>
+        <button data-nav="plants">Мой сад</button>
         <button data-nav="calendar">Календарь</button>
         <button data-nav="profile">Профиль</button>
       </nav>
@@ -28,42 +28,72 @@
     <main class="container">
       <section class="hero" id="hero-section">
         <div class="hero-copy">
-          <p class="eyebrow">Персональный уход за растениями</p>
-          <h1>Уход за растениями с календарем и погодными подсказками</h1>
+          <p class="eyebrow">PlantCare для дома</p>
+          <h1>Помогает растениям жить по расписанию, а вам не забывать про уход</h1>
           <p class="lead">
-            Добавляйте свои растения, ведите историю ухода, собирайте коллекции и сверяйте полив с погодой.
-            Лаконичный интерфейс помогает быстро показать весь сценарий: от регистрации до карточки ухода.
+            Соберите свой домашний сад, получайте подсказки по поливу, смотрите прогноз погоды и храните историю ухода
+            в одном спокойном и понятном интерфейсе.
           </p>
           <div class="hero-actions">
-            <button class="button primary" data-nav="plants">Добавить растение</button>
+            <button class="button primary" data-nav="plants">Начать уход</button>
             <button class="button ghost" data-nav="dashboard">Открыть каталог</button>
           </div>
         </div>
-        <div class="hero-card">
-          <span class="badge">Open-Meteo + Wikipedia</span>
-          <h2>Живая карточка ухода</h2>
-          <p id="health-message">Загружаем каталог, статистику и состояние API...</p>
-          <div class="mini-list">
-            <span>HttpOnly cookies</span>
-            <span>PostgreSQL</span>
-            <span>Django REST Framework</span>
+        <div class="hero-card garden-preview">
+          <span class="badge">Сегодня</span>
+          <h2>Монстера у окна</h2>
+          <p id="health-message">Проверяем ближайшие задачи и погодные условия...</p>
+          <div class="care-highlights">
+            <div>
+              <strong>Полив</strong>
+              <span>Проверьте грунт вечером</span>
+            </div>
+            <div>
+              <strong>Погода</strong>
+              <span>Дождя не ожидается</span>
+            </div>
+            <div>
+              <strong>История</strong>
+              <span>Последний уход сохранен</span>
+            </div>
           </div>
-          <button class="button primary" id="refresh-all-button">Обновить данные</button>
+          <button class="button primary" id="refresh-all-button">Обновить рекомендации</button>
         </div>
       </section>
 
       <section class="page active" id="dashboard-page">
         <div class="section-title">
           <div>
-            <p class="eyebrow">Справочник</p>
-            <h2>Каталог растений</h2>
+            <p class="eyebrow">Возможности</p>
+            <h2>Все для спокойного ухода</h2>
           </div>
-          <span class="badge">Статистика берется из backend API</span>
+          <span class="badge">Каталог, календарь и личные коллекции</span>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span>01</span>
+            <h3>Персональный график</h3>
+            <p>Добавьте растение, укажите место и интервал полива. PlantCare подскажет, когда пора проверить грунт.</p>
+          </article>
+          <article class="feature-card">
+            <span>02</span>
+            <h3>Погода рядом с уходом</h3>
+            <p>В карточке растения видно температуру, влажность и осадки, чтобы не поливать вслепую.</p>
+          </article>
+          <article class="feature-card">
+            <span>03</span>
+            <h3>Знания о растении</h3>
+            <p>Краткая справка помогает быстро вспомнить особенности вида и открыть внешний источник.</p>
+          </article>
+        </div>
+        <div class="section-title compact">
+          <h2>PlantCare в цифрах</h2>
+          <p>Живые показатели сервиса: сколько растений уже добавлено, сколько записей ухода сохранено и сколько видов есть в каталоге.</p>
         </div>
         <div class="stats-grid" id="stats-grid"></div>
         <div class="section-title compact">
           <h2>Каталог видов</h2>
-          <p>Общий справочник растений. Личные растения создаются отдельно и доступны только владельцу.</p>
+          <p>Выберите вид из справочника, а затем добавьте свое растение в личный сад.</p>
         </div>
         <div class="grid" id="species-grid"></div>
       </section>
@@ -77,11 +107,11 @@
         </div>
         <div class="auth-layout">
           <aside class="auth-info panel">
-            <span class="badge">Без localStorage</span>
-            <h3>Сессия хранится в HttpOnly cookies</h3>
+            <span class="badge">Личный сад</span>
+            <h3>Ваши растения будут доступны только вам</h3>
             <p>
-              Frontend отправляет запросы с <code>credentials: "include"</code>, а JWT не доступен JavaScript-коду страницы.
-              Это удобно показывать преподавателю через cookies в DevTools.
+              После входа можно сохранять растения, создавать задачи, вести историю ухода и собирать коллекции.
+              Каталог остается общим, а личный сад привязан к вашему аккаунту.
             </p>
           </aside>
           <div class="auth-card panel">
@@ -103,7 +133,7 @@
           </form>
             <form class="form auth-form" id="register-form" data-auth-panel="register" hidden>
             <h3>Создать аккаунт</h3>
-            <p class="muted">Логин: 3-30 символов. Пароль: 8-128 символов.</p>
+            <p class="muted">Придумайте логин от 3 до 30 символов и пароль от 8 символов.</p>
             <label>
               Логин
               <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
