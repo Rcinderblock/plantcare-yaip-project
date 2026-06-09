@@ -203,6 +203,12 @@ code {
   box-shadow: none;
 }
 
+:root[data-theme="dark"] .button.ghost {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
 .button.small {
   padding: 8px 12px;
   font-size: 0.92rem;
@@ -363,6 +369,31 @@ code {
   font-size: 0.94rem;
 }
 
+:root[data-theme="dark"] .hero-copy,
+:root[data-theme="dark"] .hero-card {
+  border-color: var(--border);
+  background:
+    linear-gradient(135deg, rgba(24, 33, 27, 0.98), rgba(17, 23, 19, 0.92)),
+    radial-gradient(circle at top right, rgba(121, 189, 120, 0.14), transparent 22rem);
+}
+
+:root[data-theme="dark"] .garden-preview {
+  background:
+    radial-gradient(circle at 80% 15%, rgba(121, 189, 120, 0.16), transparent 12rem),
+    linear-gradient(160deg, #18211b 0%, #111713 100%);
+}
+
+:root[data-theme="dark"] .garden-preview::after {
+  background:
+    radial-gradient(circle at 34% 34%, rgba(154, 213, 154, 0.18), transparent 20%),
+    linear-gradient(135deg, rgba(121, 189, 120, 0.12), rgba(114, 199, 184, 0.16));
+}
+
+:root[data-theme="dark"] .care-highlights div {
+  border-color: var(--border-strong);
+  background: rgba(19, 27, 22, 0.82);
+}
+
 .eyebrow {
   margin: 0 0 10px;
   color: var(--secondary);
@@ -442,6 +473,19 @@ code {
   background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--shadow-soft);
   padding: 22px;
+}
+
+:root[data-theme="dark"] .flow-panel {
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .step-flow li {
+  background: var(--paper-soft);
+}
+
+:root[data-theme="dark"] .step-flow span {
+  background: var(--input-bg);
+  color: var(--primary);
 }
 
 .flow-panel h2 {
