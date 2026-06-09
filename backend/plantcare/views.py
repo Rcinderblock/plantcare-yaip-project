@@ -2,8 +2,10 @@ import csv
 from io import TextIOWrapper
 
 import requests
+from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
 from rest_framework import permissions, serializers as drf_serializers, status, viewsets
@@ -13,7 +15,6 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CareLog, CareTask, Collection, PlantSpecies, UserPlant
@@ -21,12 +22,19 @@ from .serializers import (
     CareLogSerializer,
     CareTaskSerializer,
     CollectionSerializer,
+    CookieTokenObtainPairSerializer,
     PlantSpeciesSerializer,
+    PLANT_NICKNAME_MAX_LENGTH,
     RegisterSerializer,
+    TEXT_NOTE_MAX_LENGTH,
     UserPlantSerializer,
     UserSerializer,
+    WATERING_INTERVAL_MAX_DAYS,
+    WATERING_INTERVAL_MIN_DAYS,
 )
-from .services import WeatherService
+from .services import EncyclopediaService, WeatherService
+
+User = get_user_model()
 
 
 def set_access_cookie(response, access_token):
@@ -69,6 +77,7 @@ class RegisterView(APIView):
         summary="Регистрация пользователя",
         description=(
             "Создает нового пользователя Django. В теле запроса передаются username, email и password. "
+            "Логин должен быть длиной 3-30 символов, пароль - 8-128 символов. "
             "Пароль сохраняется не в открытом виде: Django хеширует его через create_user. "
             "После регистрации frontend обычно сразу вызывает ручку входа, чтобы получить HttpOnly cookies."
         ),
@@ -92,16 +101,17 @@ class CookieTokenObtainPairView(APIView):
         description=(
             "Проверяет username и password через SimpleJWT. Если данные верные, backend создает refresh token, "
             "из него получает access token и кладет оба токена в HttpOnly cookies: plantcare_access и "
-            "plantcare_refresh. Токены не возвращаются в JSON, чтобы frontend не хранил их в localStorage."
+            "plantcare_refresh. Логин принимается длиной 3-30 символов, пароль - 8-128 символов. "
+            "Токены не возвращаются в JSON, чтобы frontend не хранил их в localStorage."
         ),
-        request=TokenObtainPairSerializer,
+        request=CookieTokenObtainPairSerializer,
         responses=inline_serializer(
             name="CookieTokenLoginResult",
             fields={"user": UserSerializer(), "detail": drf_serializers.CharField()},
         ),
     )
     def post(self, request):
-        serializer = TokenObtainPairSerializer(data=request.data)
+        serializer = CookieTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         refresh = RefreshToken(serializer.validated_data["refresh"])
         response = Response(
@@ -208,6 +218,71 @@ class PlantSpeciesViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PlantSpecies.objects.all()
     serializer_class = PlantSpeciesSerializer
     permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        tags=["Каталог видов"],
+        summary="Получить энциклопедическую справку о виде",
+        description=(
+            "Ищет краткую справку о виде растения во внешнем сервисе Wikipedia. Backend пробует русское "
+            "название вида и латинское название. Если внешний сервис недоступен или статья не найдена, "
+            "ручка возвращает available=false и понятное fallback-сообщение, не ломая страницу."
+        ),
+        responses=inline_serializer(
+            name="SpeciesEncyclopedia",
+            fields={
+                "title": drf_serializers.CharField(),
+                "extract": drf_serializers.CharField(),
+                "source_url": drf_serializers.CharField(),
+                "provider": drf_serializers.CharField(),
+                "available": drf_serializers.BooleanField(),
+            },
+        ),
+    )
+    @action(detail=True, methods=["get"], permission_classes=[permissions.AllowAny], authentication_classes=[])
+    def encyclopedia(self, request, pk=None):
+        species = self.get_object()
+        service = EncyclopediaService()
+        try:
+            entry = service.fetch_species_entry(species)
+        except requests.RequestException:
+            entry = service.build_fallback_entry(species)
+        return Response(entry.__dict__)
+
+
+class StatsView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        tags=["Статистика"],
+        summary="Получить статистику проекта",
+        description=(
+            "Возвращает агрегированные счетчики по основным сущностям PlantCare. Ручка нужна для главной "
+            "страницы и для быстрой демонстрации, что backend работает с реальной PostgreSQL-базой."
+        ),
+        responses=inline_serializer(
+            name="PlantCareStats",
+            fields={
+                "species": drf_serializers.IntegerField(),
+                "plants": drf_serializers.IntegerField(),
+                "care_tasks": drf_serializers.IntegerField(),
+                "care_logs": drf_serializers.IntegerField(),
+                "collections": drf_serializers.IntegerField(),
+                "users": drf_serializers.IntegerField(),
+            },
+        ),
+    )
+    def get(self, request):
+        return Response(
+            {
+                "species": PlantSpecies.objects.count(),
+                "plants": UserPlant.objects.count(),
+                "care_tasks": CareTask.objects.count(),
+                "care_logs": CareLog.objects.count(),
+                "collections": Collection.objects.count(),
+                "users": User.objects.count(),
+            }
+        )
 
 
 class UserOwnedModelViewSet(viewsets.ModelViewSet):
@@ -476,44 +551,68 @@ class PlantImportView(APIView):
         upload = request.FILES.get("file")
         if not upload:
             return Response({"detail": "Необходимо передать CSV-файл в поле file."}, status=status.HTTP_400_BAD_REQUEST)
+        if not upload.name.lower().endswith(".csv"):
+            return Response({"detail": "Поддерживаются только CSV-файлы."}, status=status.HTTP_400_BAD_REQUEST)
 
         created = []
         errors = []
-        reader = csv.DictReader(TextIOWrapper(upload.file, encoding="utf-8-sig"))
-        required_columns = {"species_name", "nickname"}
-        if not required_columns.issubset(reader.fieldnames or set()):
-            return Response(
-                {"detail": "CSV должен содержать колонки species_name и nickname."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        for row_number, row in enumerate(reader, start=2):
-            try:
-                species_name = (row.get("species_name") or "").strip()
-                nickname = (row.get("nickname") or "").strip()
-                if not species_name or not nickname:
-                    raise ValueError("species_name и nickname обязательны")
-
-                # Импорт допускает новые виды растений: это ускоряет массовое
-                # заполнение каталога без ручной подготовки справочника.
-                species, _ = PlantSpecies.objects.get_or_create(
-                    name=species_name,
-                    defaults={
-                        "description": "Добавлено через CSV-импорт.",
-                        "watering_interval_days": int(row.get("watering_interval_days") or 7),
-                    },
+        try:
+            reader = csv.DictReader(TextIOWrapper(upload.file, encoding="utf-8-sig"))
+            required_columns = {"species_name", "nickname"}
+            if not required_columns.issubset(reader.fieldnames or set()):
+                return Response(
+                    {"detail": "CSV должен содержать колонки species_name и nickname."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-                plant = UserPlant.objects.create(
-                    owner=request.user,
-                    species=species,
-                    nickname=nickname,
-                    location_type=row.get("location_type") or UserPlant.LocationType.INDOOR,
-                    watering_interval_override=int(row["watering_interval_days"]) if row.get("watering_interval_days") else None,
-                    notes=row.get("notes") or "",
-                )
-                created.append(UserPlantSerializer(plant).data)
-            except Exception as exc:
-                errors.append({"row": row_number, "error": str(exc)})
+
+            for row_number, row in enumerate(reader, start=2):
+                try:
+                    species_name = (row.get("species_name") or "").strip()
+                    nickname = (row.get("nickname") or "").strip()
+                    notes = (row.get("notes") or "").strip()
+                    interval_raw = (row.get("watering_interval_days") or "").strip()
+                    interval = int(interval_raw) if interval_raw else None
+
+                    if not species_name or not nickname:
+                        raise ValueError("species_name и nickname обязательны")
+                    if len(species_name) > 120:
+                        raise ValueError("species_name должен быть не длиннее 120 символов")
+                    if len(nickname) > PLANT_NICKNAME_MAX_LENGTH:
+                        raise ValueError(f"nickname должен быть не длиннее {PLANT_NICKNAME_MAX_LENGTH} символов")
+                    if len(notes) > TEXT_NOTE_MAX_LENGTH:
+                        raise ValueError(f"notes должен быть не длиннее {TEXT_NOTE_MAX_LENGTH} символов")
+                    if interval is not None and not WATERING_INTERVAL_MIN_DAYS <= interval <= WATERING_INTERVAL_MAX_DAYS:
+                        raise ValueError(
+                            f"watering_interval_days должен быть от {WATERING_INTERVAL_MIN_DAYS} "
+                            f"до {WATERING_INTERVAL_MAX_DAYS}"
+                        )
+
+                    # Импорт допускает новые виды растений: это ускоряет массовое
+                    # заполнение каталога без ручной подготовки справочника.
+                    species, _ = PlantSpecies.objects.get_or_create(
+                        name=species_name,
+                        defaults={
+                            "description": "Добавлено через CSV-импорт.",
+                            "watering_interval_days": interval or 7,
+                        },
+                    )
+                    serializer = UserPlantSerializer(
+                        data={
+                            "species": species.id,
+                            "nickname": nickname,
+                            "location_type": row.get("location_type") or UserPlant.LocationType.INDOOR,
+                            "watering_interval_override": interval,
+                            "notes": notes,
+                        },
+                        context={"request": request},
+                    )
+                    serializer.is_valid(raise_exception=True)
+                    plant = serializer.save(owner=request.user)
+                    created.append(UserPlantSerializer(plant).data)
+                except Exception as exc:
+                    errors.append({"row": row_number, "error": str(exc)})
+        except UnicodeDecodeError:
+            return Response({"detail": "Не удалось прочитать CSV в кодировке UTF-8."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"created_count": len(created), "created": created, "errors": errors}, status=status.HTTP_201_CREATED)
 
@@ -553,9 +652,19 @@ class WeatherRecommendationView(APIView):
         ),
     )
     def get(self, request):
-        plant = UserPlant.objects.get(id=request.query_params["plant_id"], owner=request.user)
-        latitude = float(request.query_params.get("latitude", 55.7558))
-        longitude = float(request.query_params.get("longitude", 37.6173))
+        plant_id = request.query_params.get("plant_id")
+        if not plant_id:
+            return Response({"detail": "Параметр plant_id обязателен."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            plant_id = int(plant_id)
+            latitude = float(request.query_params.get("latitude", 55.7558))
+            longitude = float(request.query_params.get("longitude", 37.6173))
+        except ValueError:
+            return Response(
+                {"detail": "plant_id, latitude и longitude должны быть числами."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        plant = get_object_or_404(UserPlant, id=plant_id, owner=request.user)
         service = WeatherService()
         try:
             weather = service.fetch_weather(latitude, longitude)

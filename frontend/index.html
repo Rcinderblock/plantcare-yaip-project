@@ -1,12 +1,218 @@
 <!doctype html>
 <html lang="ru">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PlantCare</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <header class="topbar">
+      <a class="brand" href="#dashboard" data-nav="dashboard">PlantCare</a>
+      <nav class="nav">
+        <button data-nav="dashboard">Главная</button>
+        <button data-nav="plants">Мои растения</button>
+        <button data-nav="calendar">Календарь</button>
+        <button data-nav="profile">Профиль</button>
+      </nav>
+      <div class="session">
+        <span id="session-label">Проверяем сессию...</span>
+        <button class="button small" id="logout-button" hidden>Выйти</button>
+        <button class="button small primary" id="login-open-button">Войти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Уход за растениями без лишней архитектурной магии</p>
+          <h1>PlantCare помогает вести растения, календарь ухода и погодные подсказки</h1>
+          <p class="lead">
+            Backend работает на Django REST Framework и PostgreSQL, frontend — обычные статические HTML/CSS/JS-файлы,
+            которые отдает nginx без Node.js в контейнере.
+          </p>
+        </div>
+        <div class="panel">
+          <h2>Быстрая проверка</h2>
+          <p id="health-message">Загрузите статистику и каталог, чтобы увидеть связь frontend → API → PostgreSQL.</p>
+          <button class="button primary" id="refresh-all-button">Обновить данные</button>
+        </div>
+      </section>
+
+      <section class="page active" id="dashboard-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Статистика и каталог</p>
+            <h2>Обзор проекта</h2>
+          </div>
+          <span class="badge">PostgreSQL + DRF + Open-Meteo + Wikipedia</span>
+        </div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-title compact">
+          <h2>Каталог видов</h2>
+          <p>Общий справочник растений. Личные растения создаются отдельно и видны только владельцу.</p>
+        </div>
+        <div class="grid" id="species-grid"></div>
+      </section>
+
+      <section class="page" id="auth-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Авторизация</p>
+            <h2>Вход и регистрация</h2>
+          </div>
+        </div>
+        <div class="two-columns">
+          <form class="panel form" id="login-form">
+            <h3>Войти</h3>
+            <label>
+              Логин
+              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
+            </label>
+            <label>
+              Пароль
+              <input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required />
+            </label>
+            <button class="button primary" type="submit">Войти</button>
+          </form>
+          <form class="panel form" id="register-form">
+            <h3>Создать аккаунт</h3>
+            <p class="muted">Логин: 3-30 символов. Пароль: 8-128 символов.</p>
+            <label>
+              Логин
+              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
+            </label>
+            <label>
+              Email
+              <input name="email" type="email" maxlength="254" required />
+            </label>
+            <label>
+              Пароль
+              <input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
+            </label>
+            <button class="button primary" type="submit">Зарегистрироваться</button>
+          </form>
+        </div>
+        <p class="message" id="auth-message"></p>
+      </section>
+
+      <section class="page" id="plants-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Личный кабинет</p>
+            <h2>Мои растения</h2>
+          </div>
+          <button class="button" id="reload-plants-button">Обновить</button>
+        </div>
+        <form class="panel form-grid" id="plant-form">
+          <label>
+            Вид
+            <select name="species" required></select>
+          </label>
+          <label>
+            Имя растения
+            <input name="nickname" maxlength="120" required />
+          </label>
+          <label>
+            Место
+            <select name="location_type">
+              <option value="indoor">В помещении</option>
+              <option value="balcony">На балконе</option>
+            </select>
+          </label>
+          <label>
+            Дата посадки
+            <input name="planted_at" type="date" />
+          </label>
+          <label>
+            Интервал полива, дней
+            <input name="watering_interval_override" type="number" min="1" max="365" />
+          </label>
+          <label class="wide">
+            Заметки
+            <textarea name="notes" maxlength="1000" rows="3"></textarea>
+          </label>
+          <button class="button primary" type="submit">Добавить растение</button>
+        </form>
+        <p class="message" id="plants-message"></p>
+        <div class="grid" id="plants-grid"></div>
+        <div class="panel" id="plant-detail" hidden></div>
+      </section>
+
+      <section class="page" id="calendar-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Планирование</p>
+            <h2>Календарь ухода</h2>
+          </div>
+        </div>
+        <form class="panel form-grid" id="task-form">
+          <label>
+            Растение
+            <select name="plant" required></select>
+          </label>
+          <label>
+            Тип
+            <select name="task_type">
+              <option value="water">Полив</option>
+              <option value="fertilize">Удобрение</option>
+              <option value="repot">Пересадка</option>
+              <option value="prune">Обрезка</option>
+            </select>
+          </label>
+          <label>
+            Дата
+            <input name="due_date" type="date" required />
+          </label>
+          <label class="wide">
+            Заметки
+            <textarea name="notes" maxlength="1000" rows="2"></textarea>
+          </label>
+          <button class="button primary" type="submit">Добавить задачу</button>
+        </form>
+        <p class="message" id="calendar-message"></p>
+        <div class="list" id="tasks-list"></div>
+      </section>
+
+      <section class="page" id="profile-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Профиль</p>
+            <h2>Настройки, импорт и коллекции</h2>
+          </div>
+        </div>
+        <div class="two-columns">
+          <div class="panel">
+            <h3>Аккаунт</h3>
+            <p id="profile-info">Войдите, чтобы увидеть профиль.</p>
+          </div>
+          <form class="panel form" id="import-form">
+            <h3>CSV-импорт</h3>
+            <p class="muted">Колонки: species_name,nickname,location_type,watering_interval_days,notes.</p>
+            <input name="file" type="file" accept=".csv,text/csv" required />
+            <button class="button primary" type="submit">Импортировать</button>
+          </form>
+        </div>
+        <form class="panel form-grid" id="collection-form">
+          <label>
+            Название коллекции
+            <input name="name" maxlength="120" required />
+          </label>
+          <label>
+            Описание
+            <textarea name="description" maxlength="1000" rows="3"></textarea>
+          </label>
+          <label class="wide">
+            Растения в коллекции
+            <select name="plant_ids" multiple size="5"></select>
+          </label>
+          <button class="button primary" type="submit">Создать коллекцию</button>
+        </form>
+        <p class="message" id="profile-message"></p>
+        <div class="grid" id="collections-grid"></div>
+      </section>
+    </main>
+
+    <script src="/assets/app.js"></script>
   </body>
 </html>

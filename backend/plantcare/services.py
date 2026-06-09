@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
+from urllib.parse import quote
 
 import requests
 from django.utils import timezone
@@ -29,6 +30,15 @@ class WateringRecommendation:
     weather_available: bool
     weather_summary: str
     message: str
+
+
+@dataclass
+class EncyclopediaEntry:
+    title: str
+    extract: str
+    source_url: str
+    provider: str
+    available: bool
 
 
 class WeatherService:
@@ -144,3 +154,66 @@ class WeatherService:
         if weather.temperature_c >= 28 and weather.humidity_percent < 45:
             return "Жарко и сухо: растения могут быстрее терять влагу."
         return "Дождя не ожидается, ориентируйтесь на график ухода и состояние грунта."
+
+
+class EncyclopediaService:
+    search_endpoint = "https://ru.wikipedia.org/w/api.php"
+    summary_endpoint = "https://ru.wikipedia.org/api/rest_v1/page/summary/{title}"
+    provider = "Wikipedia"
+
+    def fetch_species_entry(self, species) -> EncyclopediaEntry:
+        candidates = [species.name]
+        if species.latin_name:
+            candidates.append(species.latin_name)
+
+        for query in candidates:
+            title = self._search_title(query)
+            if title:
+                return self._fetch_summary(title)
+
+        return self.build_fallback_entry(species, "Справка по этому виду не найдена в Wikipedia.")
+
+    def build_fallback_entry(self, species, message: str | None = None) -> EncyclopediaEntry:
+        return EncyclopediaEntry(
+            title=species.name,
+            extract=message or "Wikipedia временно недоступна: показываем только локальные данные каталога.",
+            source_url="",
+            provider=self.provider,
+            available=False,
+        )
+
+    def _search_title(self, query: str) -> str | None:
+        response = requests.get(
+            self.search_endpoint,
+            params={
+                "action": "query",
+                "list": "search",
+                "srsearch": query,
+                "srlimit": 1,
+                "format": "json",
+                "utf8": 1,
+            },
+            headers={"User-Agent": "PlantCare student project"},
+            timeout=6,
+        )
+        response.raise_for_status()
+        results = response.json().get("query", {}).get("search", [])
+        return results[0]["title"] if results else None
+
+    def _fetch_summary(self, title: str) -> EncyclopediaEntry:
+        encoded_title = quote(title.replace(" ", "_"), safe="")
+        response = requests.get(
+            self.summary_endpoint.format(title=encoded_title),
+            headers={"User-Agent": "PlantCare student project"},
+            timeout=6,
+        )
+        response.raise_for_status()
+        data = response.json()
+        source_url = data.get("content_urls", {}).get("desktop", {}).get("page", "")
+        return EncyclopediaEntry(
+            title=data.get("title") or title,
+            extract=data.get("extract") or "В Wikipedia есть статья, но краткое описание не заполнено.",
+            source_url=source_url or f"https://ru.wikipedia.org/wiki/{encoded_title}",
+            provider=self.provider,
+            available=True,
+        )

@@ -12,6 +12,7 @@ from .views import (
     PlantImportView,
     PlantSpeciesViewSet,
     RegisterView,
+    StatsView,
     UserPlantViewSet,
     WeatherRecommendationView,
 )
@@ -25,6 +26,7 @@ router.register("collections", CollectionViewSet, basename="collections")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("stats/", StatsView.as_view(), name="stats"),
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/token/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
