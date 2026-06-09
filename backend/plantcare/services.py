@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import timedelta
+from difflib import SequenceMatcher
 from urllib.parse import quote
 
 import requests
@@ -39,6 +40,7 @@ class EncyclopediaEntry:
     source_url: str
     provider: str
     available: bool
+    thumbnail_url: str = ""
 
 
 class WeatherService:
@@ -160,6 +162,18 @@ class EncyclopediaService:
     search_endpoint = "https://ru.wikipedia.org/w/api.php"
     summary_endpoint = "https://ru.wikipedia.org/api/rest_v1/page/summary/{title}"
     provider = "Wikipedia"
+    plant_markers = (
+        "растени",
+        "семейств",
+        "род ",
+        "вид ",
+        "трав",
+        "дерев",
+        "кустар",
+        "лиан",
+        "суккулент",
+        "цветок",
+    )
 
     def fetch_species_entry(self, species) -> EncyclopediaEntry:
         candidates = [species.name]
@@ -181,6 +195,71 @@ class EncyclopediaService:
             provider=self.provider,
             available=False,
         )
+
+    def search(self, query: str, limit: int = 5) -> list[EncyclopediaEntry]:
+        normalized_query = " ".join(query.split())
+        pages = self._search_pages(normalized_query)
+        if not pages:
+            pages = self._search_pages(f"{normalized_query}~")
+
+        ranked = sorted(
+            (self._page_to_entry(page) for page in pages),
+            key=lambda entry: self._entry_score(normalized_query, entry),
+            reverse=True,
+        )
+        plant_results = [entry for entry in ranked if self._looks_like_plant(entry)]
+        return (plant_results or ranked)[:limit]
+
+    def _search_pages(self, query: str) -> list[dict]:
+        response = requests.get(
+            self.search_endpoint,
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": query,
+                "gsrnamespace": 0,
+                "gsrlimit": 8,
+                "prop": "extracts|pageimages|info",
+                "exintro": 1,
+                "explaintext": 1,
+                "piprop": "thumbnail",
+                "pithumbsize": 900,
+                "inprop": "url",
+                "redirects": 1,
+                "format": "json",
+                "utf8": 1,
+            },
+            headers={"User-Agent": "PlantCare student project"},
+            timeout=6,
+        )
+        response.raise_for_status()
+        pages = response.json().get("query", {}).get("pages", {}).values()
+        return sorted(pages, key=lambda page: page.get("index", 999))
+
+    def _page_to_entry(self, page: dict) -> EncyclopediaEntry:
+        title = page.get("title") or "Wikipedia"
+        encoded_title = quote(title.replace(" ", "_"), safe="")
+        return EncyclopediaEntry(
+            title=title,
+            extract=page.get("extract") or "В статье пока нет краткого описания.",
+            source_url=page.get("fullurl") or f"https://ru.wikipedia.org/wiki/{encoded_title}",
+            provider=self.provider,
+            available=True,
+            thumbnail_url=page.get("thumbnail", {}).get("source", ""),
+        )
+
+    def _looks_like_plant(self, entry: EncyclopediaEntry) -> bool:
+        text = f"{entry.title} {entry.extract}".lower()
+        return any(marker in text for marker in self.plant_markers)
+
+    def _entry_score(self, query: str, entry: EncyclopediaEntry) -> float:
+        query_lower = query.lower()
+        title_lower = entry.title.lower()
+        similarity = SequenceMatcher(None, query_lower, title_lower).ratio()
+        exact_bonus = 2 if query_lower == title_lower else 0
+        prefix_bonus = 1 if title_lower.startswith(query_lower) or query_lower.startswith(title_lower) else 0
+        plant_bonus = 1 if self._looks_like_plant(entry) else 0
+        return exact_bonus + prefix_bonus + plant_bonus + similarity
 
     def _search_title(self, query: str) -> str | None:
         response = requests.get(
@@ -216,4 +295,5 @@ class EncyclopediaService:
             source_url=source_url or f"https://ru.wikipedia.org/wiki/{encoded_title}",
             provider=self.provider,
             available=True,
+            thumbnail_url=data.get("thumbnail", {}).get("source", ""),
         )

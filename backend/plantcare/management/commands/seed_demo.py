@@ -12,7 +12,7 @@ DEMO_SPECIES = [
         "humidity": 65,
         "watering_interval_days": 7,
         "pet_safe": False,
-        "image_url": "https://images.unsplash.com/photo-1614594895304-fe7116ac3b58?auto=format&fit=crop&w=900&q=80",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Monstera_deliciosa2.jpg/960px-Monstera_deliciosa2.jpg",
     },
     {
         "name": "Сансевиерия",
@@ -22,7 +22,7 @@ DEMO_SPECIES = [
         "humidity": 40,
         "watering_interval_days": 14,
         "pet_safe": False,
-        "image_url": "/plants/sansevieria.svg",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Snake_Plant_I_%28crop_version%29.png/960px-Snake_Plant_I_%28crop_version%29.png",
     },
     {
         "name": "Базилик",
@@ -32,7 +32,7 @@ DEMO_SPECIES = [
         "humidity": 55,
         "watering_interval_days": 2,
         "pet_safe": True,
-        "image_url": "https://images.unsplash.com/photo-1618164435735-413d3b066c9a?auto=format&fit=crop&w=900&q=80",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Basil-Basilico-Ocimum_basilicum-albahaca.jpg/960px-Basil-Basilico-Ocimum_basilicum-albahaca.jpg",
     },
     {
         "name": "Фикус Бенджамина",
@@ -42,7 +42,7 @@ DEMO_SPECIES = [
         "humidity": 55,
         "watering_interval_days": 8,
         "pet_safe": False,
-        "image_url": "https://images.unsplash.com/photo-1597305877032-0668b3c6413a?auto=format&fit=crop&w=900&q=80",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/2/25/Ficus_benjamina.jpg",
     },
 ]
 

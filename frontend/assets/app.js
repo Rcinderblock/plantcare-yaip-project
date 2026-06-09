@@ -7,7 +7,6 @@ const state = {
   logs: [],
   collections: [],
   stats: null,
-  encyclopedia: new Map(),
   authMode: "login",
 };
 
@@ -64,6 +63,10 @@ const formatDate = (value) => {
 };
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const truncateText = (value, maxLength) => {
+  const text = String(value || "");
+  return text.length > maxLength ? `${text.slice(0, maxLength).trim()}…` : text;
+};
 
 function showMessage(id, text, isError = false) {
   const node = document.getElementById(id);
@@ -183,6 +186,20 @@ function setAuthMode(mode) {
   showMessage("auth-message", "");
 }
 
+function applyTheme(theme) {
+  const isDark = theme === "dark";
+  document.documentElement.dataset.theme = isDark ? "dark" : "light";
+  const toggle = $("#theme-toggle");
+  if (toggle) toggle.setAttribute("aria-checked", String(isDark));
+  localStorage.setItem("plantcare_theme", isDark ? "dark" : "light");
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("plantcare_theme");
+  const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  applyTheme(savedTheme || preferredTheme);
+}
+
 function renderSession() {
   const label = $("#session-label");
   const loginButton = $("#login-open-button");
@@ -214,9 +231,9 @@ function renderStats() {
 
 function speciesImageMarkup(species) {
   if (!species.image_url) {
-    return `<div class="empty">Изображение не указано</div>`;
+    return `<div class="species-image-placeholder">${escapeHtml(species.name.slice(0, 1))}</div>`;
   }
-  return `<img src="${escapeHtml(species.image_url)}" alt="${escapeHtml(species.name)}">`;
+  return `<img src="${escapeHtml(species.image_url)}" alt="${escapeHtml(species.name)}" loading="eager">`;
 }
 
 function renderSpecies() {
@@ -226,18 +243,21 @@ function renderSpecies() {
     return;
   }
   grid.innerHTML = state.species.map((item) => `
-    <article class="card">
-      ${speciesImageMarkup(item)}
-      <h3>${escapeHtml(item.name)}</h3>
-      <p class="meta">${escapeHtml(item.latin_name || "латинское название не указано")}</p>
-      <p>${escapeHtml(item.description || "Описание пока не заполнено.")}</p>
-      <div class="chips">
-        <span class="chip">Полив: ${item.watering_interval_days} дн.</span>
-        <span class="chip">Влажность: ${item.humidity}%</span>
-        <span class="chip">${item.pet_safe ? "Безопасно для питомцев" : "Беречь от питомцев"}</span>
+    <article class="species-card">
+      <div class="species-image">${speciesImageMarkup(item)}</div>
+      <div class="species-card-body">
+        <div>
+          <h3>${escapeHtml(item.name)}</h3>
+          <p class="latin-name">${escapeHtml(item.latin_name || "Латинское название не указано")}</p>
+        </div>
+        <p class="species-description">${escapeHtml(item.description || "Описание пока не заполнено.")}</p>
+        <dl class="species-facts">
+          <div><dt>Полив</dt><dd>${item.watering_interval_days} дн.</dd></div>
+          <div><dt>Влажность</dt><dd>${item.humidity}%</dd></div>
+          <div><dt>Питомцы</dt><dd>${item.pet_safe ? "Можно" : "Беречь"}</dd></div>
+        </dl>
+        <button class="button species-action" data-add-species="${item.id}">Добавить в мой сад</button>
       </div>
-      <button class="button" data-encyclopedia="${item.id}">Справка Wikipedia</button>
-      <div class="meta" id="encyclopedia-${item.id}"></div>
     </article>
   `).join("");
 }
@@ -256,10 +276,20 @@ function fillSelects() {
   const taskPlantSelect = $('#task-form select[name="plant"]');
   if (taskPlantSelect) taskPlantSelect.innerHTML = plantOptions;
 
-  const collectionSelect = $('#collection-form select[name="plant_ids"]');
-  if (collectionSelect) collectionSelect.innerHTML = state.plants
-    .map((plant) => `<option value="${plant.id}">${escapeHtml(plant.nickname)}</option>`)
-    .join("");
+  const collectionOptions = $("#collection-plant-options");
+  if (collectionOptions) {
+    collectionOptions.innerHTML = state.plants.length
+      ? state.plants.map((plant) => `
+          <label class="plant-choice">
+            <input type="checkbox" name="plant_ids" value="${plant.id}">
+            <span>
+              <strong>${escapeHtml(plant.nickname)}</strong>
+              <small>${escapeHtml(plant.species_detail.name)}</small>
+            </span>
+          </label>
+        `).join("")
+      : `<div class="empty-state compact"><span>Сначала добавьте растение в раздел «Мой сад».</span></div>`;
+  }
 }
 
 function renderPlants() {
@@ -274,12 +304,19 @@ function renderPlants() {
     return;
   }
   grid.innerHTML = state.plants.map((plant) => `
-    <article class="card">
-      <h3>${escapeHtml(plant.nickname)}</h3>
-      <p class="meta">${escapeHtml(plant.species_detail.name)} · ${LOCATION_LABELS[plant.location_type]}</p>
-      <p>Следующий полив: ${formatDate(plant.next_watering_due)}</p>
-      <p class="meta">${escapeHtml(plant.notes || "Заметок пока нет.")}</p>
-      <button class="button primary" data-open-plant="${plant.id}">Открыть уход</button>
+    <article class="plant-card">
+      <div class="plant-card-image">${speciesImageMarkup(plant.species_detail)}</div>
+      <div class="plant-card-content">
+        <div class="plant-card-head">
+          <div>
+            <h3>${escapeHtml(plant.nickname)}</h3>
+            <p>${escapeHtml(plant.species_detail.name)} · ${LOCATION_LABELS[plant.location_type]}</p>
+          </div>
+          <span class="chip">${formatDate(plant.next_watering_due)}</span>
+        </div>
+        <p class="plant-note">${escapeHtml(plant.notes || "Заметок пока нет.")}</p>
+        <button class="button primary" data-open-plant="${plant.id}">Открыть карточку ухода</button>
+      </div>
     </article>
   `).join("");
 }
@@ -318,13 +355,13 @@ function renderCollections() {
     return;
   }
   if (!state.collections.length) {
-    grid.innerHTML = `<div class="empty">Коллекций пока нет. Создайте первую, чтобы показать many-to-many связь.</div>`;
+    grid.innerHTML = `<div class="empty-state"><strong>Коллекций пока нет</strong><span>Создайте первую группу для своих растений.</span></div>`;
     return;
   }
   grid.innerHTML = state.collections.map((collection) => `
-    <article class="card">
+    <article class="collection-card">
       <h3>${escapeHtml(collection.name)}</h3>
-      <p class="meta">${escapeHtml(collection.description || "Без описания")}</p>
+      <p>${escapeHtml(collection.description || "Без описания")}</p>
       <div class="chips">
         ${collection.plants.length
           ? collection.plants.map((plant) => `<span class="chip">${escapeHtml(plant.nickname)}</span>`).join("")
@@ -404,34 +441,62 @@ async function login(username, password) {
   await loadPrivateData();
 }
 
-async function loadEncyclopedia(speciesId) {
-  const target = document.getElementById(`encyclopedia-${speciesId}`);
-  if (!target) return;
-  if (state.encyclopedia.has(speciesId)) {
-    target.innerHTML = renderEncyclopediaEntry(state.encyclopedia.get(speciesId));
+function renderEncyclopediaResults(payload) {
+  const container = $("#encyclopedia-results");
+  if (!payload.results.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>Ничего не найдено</strong>
+        <span>${escapeHtml(payload.message || "Попробуйте другое название растения.")}</span>
+      </div>
+    `;
     return;
   }
-  target.textContent = "Загружаем справку...";
-  try {
-    const entry = await api(`/species/${speciesId}/encyclopedia/`);
-    state.encyclopedia.set(speciesId, entry);
-    target.innerHTML = renderEncyclopediaEntry(entry);
-  } catch (error) {
-    target.textContent = error.message;
-  }
+
+  const [primary, ...alternatives] = payload.results;
+  container.innerHTML = `
+    <article class="encyclopedia-primary">
+      <div class="encyclopedia-image">
+        ${primary.thumbnail_url
+          ? `<img src="${escapeHtml(primary.thumbnail_url)}" alt="${escapeHtml(primary.title)}">`
+          : `<div class="species-image-placeholder">${escapeHtml(primary.title.slice(0, 1))}</div>`}
+      </div>
+      <div>
+        <span class="result-kicker">Лучшее совпадение</span>
+        <h3>${escapeHtml(primary.title)}</h3>
+        <p>${escapeHtml(truncateText(primary.extract, 1000))}</p>
+        <a class="button primary inline-button" href="${escapeHtml(primary.source_url)}" target="_blank" rel="noreferrer">
+          Читать в Wikipedia
+        </a>
+      </div>
+    </article>
+    ${alternatives.length ? `
+      <section class="alternative-results">
+        <h3>Другие варианты</h3>
+        <div>
+          ${alternatives.map((entry) => `
+            <a href="${escapeHtml(entry.source_url)}" target="_blank" rel="noreferrer">
+              <strong>${escapeHtml(entry.title)}</strong>
+              <span>${escapeHtml(truncateText(entry.extract, 180))}</span>
+            </a>
+          `).join("")}
+        </div>
+      </section>
+    ` : ""}
+  `;
 }
 
-function renderEncyclopediaEntry(entry) {
-  const source = entry.source_url
-    ? `<a href="${escapeHtml(entry.source_url)}" target="_blank" rel="noreferrer">Источник: ${escapeHtml(entry.provider)}</a>`
-    : `Источник: ${escapeHtml(entry.provider)}`;
-  return `
-    <div class="panel">
-      <strong>${escapeHtml(entry.title)}</strong>
-      <p>${escapeHtml(entry.extract)}</p>
-      <p class="meta">${source} · ${entry.available ? "найдено" : "fallback"}</p>
-    </div>
-  `;
+async function searchEncyclopedia(query) {
+  showMessage("encyclopedia-message", "Ищем в Wikipedia...");
+  $("#encyclopedia-results").innerHTML = `<div class="search-skeleton"></div>`;
+  try {
+    const payload = await api(`/encyclopedia/search/?q=${encodeURIComponent(query)}`);
+    showMessage("encyclopedia-message", payload.available ? "" : payload.message, !payload.available);
+    renderEncyclopediaResults(payload);
+  } catch (error) {
+    showMessage("encyclopedia-message", error.message, true);
+    $("#encyclopedia-results").innerHTML = "";
+  }
 }
 
 async function openPlant(plantId) {
@@ -582,6 +647,12 @@ async function completeTask(taskId) {
 }
 
 function bindForms() {
+  $("#encyclopedia-search-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    await searchEncyclopedia(String(form.get("query") || "").trim());
+  });
+
   $("#login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
@@ -669,6 +740,7 @@ function bindForms() {
       await loadPrivateData();
       showMessage("profile-message", `Импортировано: ${result.created_count}. Ошибок: ${result.errors.length}.`);
       event.target.reset();
+      $("#import-file-name").textContent = "Файл не выбран";
     } catch (error) {
       showMessage("profile-message", error.message, true);
     }
@@ -677,14 +749,15 @@ function bindForms() {
   $("#collection-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
-    const select = event.target.elements.plant_ids;
+    const plantIds = Array.from(event.target.querySelectorAll('input[name="plant_ids"]:checked'))
+      .map((input) => Number(input.value));
     try {
       await api("/collections/", {
         method: "POST",
         body: {
           name: form.get("name"),
           description: form.get("description"),
-          plant_ids: Array.from(select.selectedOptions).map((option) => Number(option.value)),
+          plant_ids: plantIds,
         },
       });
       event.target.reset();
@@ -712,9 +785,15 @@ function bindClicks() {
       return;
     }
 
-    const encyclopediaButton = event.target.closest("[data-encyclopedia]");
-    if (encyclopediaButton) {
-      await loadEncyclopedia(Number(encyclopediaButton.dataset.encyclopedia));
+    const addSpeciesButton = event.target.closest("[data-add-species]");
+    if (addSpeciesButton) {
+      const speciesId = addSpeciesButton.dataset.addSpecies;
+      setActivePage("plants");
+      if (state.user) {
+        const select = $('#plant-form select[name="species"]');
+        if (select) select.value = speciesId;
+        $('#plant-form input[name="nickname"]')?.focus();
+      }
       return;
     }
 
@@ -736,6 +815,13 @@ function bindClicks() {
   });
   $("#refresh-all-button").addEventListener("click", loadEverything);
   $("#reload-plants-button").addEventListener("click", loadPrivateData);
+  $("#theme-toggle").addEventListener("click", () => {
+    const currentTheme = document.documentElement.dataset.theme;
+    applyTheme(currentTheme === "dark" ? "light" : "dark");
+  });
+  $('#import-form input[name="file"]').addEventListener("change", (event) => {
+    $("#import-file-name").textContent = event.target.files?.[0]?.name || "Файл не выбран";
+  });
   $("#logout-button").addEventListener("click", async () => {
     try {
       await api("/auth/logout/", { method: "POST" }, false);
@@ -749,6 +835,7 @@ function bindClicks() {
 }
 
 async function init() {
+  initTheme();
   $('#task-form input[name="due_date"]').value = todayIso();
   bindClicks();
   bindForms();

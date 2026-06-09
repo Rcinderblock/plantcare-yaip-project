@@ -249,6 +249,77 @@ class PlantSpeciesViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(entry.__dict__)
 
 
+class EncyclopediaSearchView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        tags=["Справка"],
+        summary="Найти растение в Wikipedia",
+        description=(
+            "Выполняет полнотекстовый поиск по русской Wikipedia и возвращает до пяти наиболее релевантных "
+            "статей о растениях. Если обычный поиск не дал результатов, backend повторяет запрос с fuzzy-поиском, "
+            "поэтому небольшие опечатки не требуют точного совпадения названия."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="q",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Название растения или его часть, от 2 до 120 символов.",
+            ),
+        ],
+        responses=inline_serializer(
+            name="EncyclopediaSearchResponse",
+            fields={
+                "query": drf_serializers.CharField(),
+                "available": drf_serializers.BooleanField(),
+                "message": drf_serializers.CharField(),
+                "results": inline_serializer(
+                    name="EncyclopediaSearchItem",
+                    many=True,
+                    fields={
+                        "title": drf_serializers.CharField(),
+                        "extract": drf_serializers.CharField(),
+                        "source_url": drf_serializers.CharField(),
+                        "provider": drf_serializers.CharField(),
+                        "available": drf_serializers.BooleanField(),
+                        "thumbnail_url": drf_serializers.CharField(),
+                    },
+                ),
+            },
+        ),
+    )
+    def get(self, request):
+        query = " ".join(request.query_params.get("q", "").split())
+        if len(query) < 2:
+            return Response({"q": ["Введите не менее 2 символов."]}, status=status.HTTP_400_BAD_REQUEST)
+        if len(query) > 120:
+            return Response({"q": ["Введите не более 120 символов."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            results = EncyclopediaService().search(query)
+        except requests.RequestException:
+            return Response(
+                {
+                    "query": query,
+                    "available": False,
+                    "message": "Wikipedia временно недоступна. Попробуйте еще раз позже.",
+                    "results": [],
+                }
+            )
+
+        return Response(
+            {
+                "query": query,
+                "available": True,
+                "message": "Ничего не найдено. Попробуйте другое или латинское название." if not results else "",
+                "results": [entry.__dict__ for entry in results],
+            }
+        )
+
+
 class StatsView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]

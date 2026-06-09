@@ -264,6 +264,53 @@ def test_species_encyclopedia_endpoint_falls_back_when_wikipedia_times_out(speci
 
 
 @pytest.mark.django_db
+def test_encyclopedia_search_returns_ranked_results(monkeypatch):
+    monkeypatch.setattr(
+        "plantcare.views.EncyclopediaService.search",
+        lambda self, query: [
+            EncyclopediaEntry(
+                title="Сансевиерия",
+                extract="Сансевиерия - род растений семейства Спаржевые.",
+                source_url="https://ru.wikipedia.org/wiki/Сансевиерия",
+                provider="Wikipedia",
+                available=True,
+                thumbnail_url="https://upload.wikimedia.org/sansevieria.jpg",
+            )
+        ],
+    )
+
+    response = APIClient().get(reverse("encyclopedia-search"), {"q": "сансиверия"})
+
+    assert response.status_code == 200
+    assert response.data["available"] is True
+    assert response.data["results"][0]["title"] == "Сансевиерия"
+    assert response.data["results"][0]["thumbnail_url"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("query", ["", "x", "x" * 121])
+def test_encyclopedia_search_validates_query_length(query):
+    response = APIClient().get(reverse("encyclopedia-search"), {"q": query})
+
+    assert response.status_code == 400
+    assert "q" in response.data
+
+
+@pytest.mark.django_db
+def test_encyclopedia_search_handles_wikipedia_timeout(monkeypatch):
+    def raise_timeout(self, query):
+        raise requests.Timeout("Wikipedia timeout")
+
+    monkeypatch.setattr("plantcare.views.EncyclopediaService.search", raise_timeout)
+
+    response = APIClient().get(reverse("encyclopedia-search"), {"q": "монстера"})
+
+    assert response.status_code == 200
+    assert response.data["available"] is False
+    assert response.data["results"] == []
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("payload", "field"),
     [
