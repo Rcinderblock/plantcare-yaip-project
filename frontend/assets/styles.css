@@ -472,6 +472,13 @@ code {
   color: var(--muted);
 }
 
+.section-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .flow-panel {
   display: grid;
   grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
@@ -598,6 +605,29 @@ code {
 
 .catalog-note {
   margin-bottom: 18px;
+}
+
+.catalog-species-import {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.catalog-species-import[hidden] {
+  display: none;
+}
+
+.catalog-species-import h2,
+.catalog-species-import p {
+  margin-top: 0;
+}
+
+.catalog-species-import p:not(.eyebrow) {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .stat-card,
@@ -1458,9 +1488,15 @@ select[multiple] {
   }
 
   .catalog-preview-cta,
-  .catalog-note {
+  .catalog-note,
+  .catalog-species-import {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .catalog-species-import {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .form-span-2 {

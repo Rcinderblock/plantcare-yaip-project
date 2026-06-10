@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Каталог растений — PlantCare</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-12" />
   </head>
   <body data-page="catalog">
     <header class="topbar">
@@ -36,8 +36,30 @@
             по Wikipedia и добавить в разделе «Мой сад».
           </p>
         </div>
-        <a class="button" href="/guide.html" data-nav="guide">Найти справку</a>
+        <div class="section-actions">
+          <button class="button primary" type="button" data-toggle-catalog-import>Добавить вид</button>
+          <a class="button" href="/guide.html" data-nav="guide">Найти справку</a>
+        </div>
       </div>
+
+      <section class="panel catalog-species-import" id="catalog-species-import" hidden>
+        <div>
+          <p class="eyebrow">Новый вид</p>
+          <h2>Добавить растение из Wikipedia</h2>
+          <p>
+            Введите русское или латинское название. PlantCare проверит, что найденная статья относится к растениям,
+            и добавит подтвержденный вид в каталог.
+          </p>
+        </div>
+        <form class="species-import-form" id="species-import-form">
+          <label>
+            <span class="sr-only">Название вида для поиска в Wikipedia</span>
+            <input name="query" minlength="2" maxlength="120" placeholder="Например, калатея или calathea" required />
+          </label>
+          <button class="button primary" type="submit">Добавить в каталог</button>
+        </form>
+        <p class="message compact-message" id="species-import-message"></p>
+      </section>
 
       <section class="panel catalog-note">
         <div>
@@ -52,6 +74,6 @@
       <div class="grid" id="catalog-grid"></div>
     </main>
 
-    <script src="/assets/app.js?v=20260610-11"></script>
+    <script src="/assets/app.js?v=20260610-12"></script>
   </body>
 </html>

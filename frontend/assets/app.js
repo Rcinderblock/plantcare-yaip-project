@@ -875,12 +875,20 @@ function bindForms() {
           body: { query },
         });
         await loadPublicData();
-        selectSpeciesForPlant(result.species.id);
         event.target.reset();
-        showMessage(
-          "species-import-message",
-          `${result.message} Вид «${result.species.name}» выбран в форме выше.`
-        );
+        if (currentPage() === "catalog") {
+          showMessage(
+            "species-import-message",
+            `${result.message} Вид «${result.species.name}» уже отображается в каталоге.`
+          );
+          scrollToElement("#catalog-grid");
+        } else {
+          selectSpeciesForPlant(result.species.id);
+          showMessage(
+            "species-import-message",
+            `${result.message} Вид «${result.species.name}» выбран в форме выше.`
+          );
+        }
       } catch (error) {
         showMessage("species-import-message", error.message, true);
       }
@@ -959,6 +967,24 @@ function bindForms() {
 
 function bindClicks() {
   document.addEventListener("click", async (event) => {
+    const catalogImportToggle = event.target.closest("[data-toggle-catalog-import]");
+    if (catalogImportToggle) {
+      if (!state.user) {
+        navigateTo("auth", { query: "?next=catalog" });
+        return;
+      }
+      const panel = $("#catalog-species-import");
+      if (panel) {
+        panel.hidden = !panel.hidden;
+        catalogImportToggle.textContent = panel.hidden ? "Добавить вид" : "Скрыть форму";
+        if (!panel.hidden) {
+          panel.querySelector('input[name="query"]')?.focus();
+          scrollToElement("#catalog-species-import");
+        }
+      }
+      return;
+    }
+
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       event.preventDefault();
