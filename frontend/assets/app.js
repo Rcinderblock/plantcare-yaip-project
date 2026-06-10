@@ -295,6 +295,28 @@ function updateHeroSummary(prefix = "") {
   message.textContent = `${prefixText}Нажмите «Добавить в мой сад» на карточке вида ниже. Если нужного вида нет, добавьте его в разделе «Мой сад» через Wikipedia.`;
 }
 
+async function updateHeroWeather() {
+  const summary = $("#hero-weather-summary");
+  if (!summary) return;
+
+  if (!state.user) {
+    summary.textContent = "Войдите, чтобы получить погодную подсказку";
+    return;
+  }
+  if (!state.plants.length) {
+    summary.textContent = "Добавьте растение для погодной подсказки";
+    return;
+  }
+
+  summary.textContent = "Проверяем Open-Meteo...";
+  try {
+    const recommendation = await api(`/weather/recommendation/?plant_id=${state.plants[0].id}`);
+    summary.textContent = recommendation.weather_summary;
+  } catch {
+    summary.textContent = "Погодный сервис временно недоступен";
+  }
+}
+
 function speciesImageMarkup(species) {
   if (!species.image_url) {
     return `<div class="species-image-placeholder">${escapeHtml(species.name.slice(0, 1))}</div>`;
@@ -506,6 +528,7 @@ async function loadPrivateData() {
     renderTasks();
     renderCollections();
     updateHeroSummary();
+    await updateHeroWeather();
     return;
   }
   const [plants, tasks, logs, collections] = await Promise.all([
@@ -522,6 +545,7 @@ async function loadPrivateData() {
   renderTasks();
   renderCollections();
   updateHeroSummary();
+  await updateHeroWeather();
 }
 
 async function loadSession() {

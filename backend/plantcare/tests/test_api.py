@@ -344,6 +344,45 @@ def test_encyclopedia_service_filters_non_plant_pages(monkeypatch):
     assert [entry.title for entry in results] == ["Лилия"]
 
 
+def test_encyclopedia_service_uses_prefix_search_for_partial_name(monkeypatch):
+    requested_generators = []
+
+    class FakeWikipediaResponse:
+        def __init__(self, params):
+            self.params = params
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            requested_generators.append(self.params["generator"])
+            if self.params["generator"] == "prefixsearch":
+                return {
+                    "query": {
+                        "pages": {
+                            "1": {
+                                "title": "Монстера",
+                                "index": 1,
+                                "extract": "Монстера — род тропических растений семейства Ароидные.",
+                                "fullurl": "https://ru.wikipedia.org/wiki/Монстера",
+                                "categories": [{"title": "Категория:Роды растений"}],
+                            }
+                        }
+                    }
+                }
+            return {"query": {"pages": {}}}
+
+    monkeypatch.setattr(
+        "plantcare.services.requests.get",
+        lambda *args, **kwargs: FakeWikipediaResponse(kwargs["params"]),
+    )
+
+    results = EncyclopediaService().search("монст")
+
+    assert [entry.title for entry in results] == ["Монстера"]
+    assert requested_generators == ["prefixsearch"]
+
+
 @pytest.mark.django_db
 def test_species_can_be_created_from_encyclopedia(auth_client, monkeypatch):
     monkeypatch.setattr(

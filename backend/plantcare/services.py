@@ -230,6 +230,15 @@ class EncyclopediaService:
 
     def search(self, query: str, limit: int = 5) -> list[EncyclopediaEntry]:
         normalized_query = " ".join(query.split())
+        prefix_pages = self._search_prefix_pages(normalized_query)
+        plant_pages = [page for page in prefix_pages if self._page_looks_like_plant(page)]
+
+        # Для незавершенного названия (например, "монст" или "калат")
+        # prefix search точнее полнотекстового поиска и не подмешивает статьи,
+        # где похожая последовательность встретилась только внутри текста.
+        if plant_pages:
+            return self._rank_pages(normalized_query, plant_pages, limit)
+
         pages = self._search_pages(normalized_query)
         if not pages:
             pages = self._search_pages(f"{normalized_query}~")
@@ -238,22 +247,41 @@ class EncyclopediaService:
         if not plant_pages:
             return []
 
+        return self._rank_pages(normalized_query, plant_pages, limit)
+
+    def _rank_pages(self, query: str, pages: list[dict], limit: int) -> list[EncyclopediaEntry]:
         ranked = sorted(
-            (self._page_to_entry(page) for page in plant_pages),
-            key=lambda entry: self._entry_score(normalized_query, entry),
+            (self._page_to_entry(page) for page in pages),
+            key=lambda entry: self._entry_score(query, entry),
             reverse=True,
         )
         return ranked[:limit]
 
+    def _search_prefix_pages(self, query: str) -> list[dict]:
+        return self._request_pages(
+            {
+                "generator": "prefixsearch",
+                "gpssearch": query,
+                "gpsnamespace": 0,
+                "gpslimit": 8,
+            }
+        )
+
     def _search_pages(self, query: str) -> list[dict]:
-        response = requests.get(
-            self.search_endpoint,
-            params={
-                "action": "query",
+        return self._request_pages(
+            {
                 "generator": "search",
                 "gsrsearch": query,
                 "gsrnamespace": 0,
                 "gsrlimit": 8,
+            }
+        )
+
+    def _request_pages(self, search_params: dict) -> list[dict]:
+        response = requests.get(
+            self.search_endpoint,
+            params={
+                "action": "query",
                 "prop": "extracts|pageimages|info|categories",
                 "exintro": 1,
                 "explaintext": 1,
@@ -264,6 +292,7 @@ class EncyclopediaService:
                 "redirects": 1,
                 "format": "json",
                 "utf8": 1,
+                **search_params,
             },
             headers={"User-Agent": "PlantCare student project"},
             timeout=6,
