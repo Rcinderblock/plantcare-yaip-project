@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PlantCare</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260610-9" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-10" />
   </head>
   <body>
     <header class="topbar">
@@ -13,7 +13,7 @@
         <span>PlantCare</span>
       </a>
       <nav class="nav">
-        <button data-nav="dashboard">Каталог</button>
+        <button data-nav="catalog">Каталог</button>
         <button data-nav="guide">Справка</button>
         <button data-nav="plants">Мой сад</button>
         <button data-nav="calendar">Календарь</button>
@@ -34,7 +34,7 @@
           <p class="lead">Добавьте растение. PlantCare подскажет, когда поливать, и сохранит историю ухода.</p>
           <div class="hero-actions">
             <button class="button primary" data-nav="plants">Начать уход</button>
-            <button class="button ghost" data-nav="dashboard" data-scroll-target="#catalog-section">Открыть каталог</button>
+            <button class="button ghost" data-nav="catalog">Открыть каталог</button>
           </div>
         </div>
         <div class="hero-card garden-preview">
@@ -87,14 +87,43 @@
           </ol>
         </section>
         <div class="section-title compact" id="catalog-section">
-          <h2>Популярные виды</h2>
-          <p>Изучите растение в разделе «Справка» или добавьте его в личный сад после входа.</p>
+          <h2>Каталог</h2>
+          <p>Нажмите «Добавить в мой сад» на карточке вида или откройте полный каталог по кнопке ниже.</p>
         </div>
         <div class="grid" id="species-grid"></div>
+        <div class="catalog-preview-cta" id="catalog-preview-cta">
+          <p>В каталоге можно сразу добавить вид в личный сад.</p>
+          <button class="button" type="button" data-nav="catalog">Показать еще</button>
+        </div>
         <div class="section-title compact community-title">
           <h2>Сообщество PlantCare</h2>
         </div>
         <div class="stats-grid" id="stats-grid"></div>
+      </section>
+
+      <section class="page" id="catalog-page">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Каталог</p>
+            <h2>Все виды, которые можно добавить в сад</h2>
+            <p class="section-description">
+              Нажмите «Добавить в мой сад» на карточке вида, чтобы выбрать его для личного ухода.
+              Если нужного растения нет в списке, откройте «Мой сад» и добавьте его из Wikipedia.
+            </p>
+          </div>
+          <button class="button" type="button" data-nav="guide">Открыть справку</button>
+        </div>
+        <section class="panel catalog-note">
+          <div>
+            <h3>Как пользоваться каталогом</h3>
+            <p>
+              Карточки показывают базовый полив, влажность и отношение к питомцам.
+              Вид можно сразу добавить в личный сад через кнопку на карточке.
+            </p>
+          </div>
+          <button class="button primary" type="button" data-nav="plants">Перейти в мой сад</button>
+        </section>
+        <div class="grid" id="catalog-grid"></div>
       </section>
 
       <section class="page" id="guide-page">
@@ -342,6 +371,6 @@
       </section>
     </main>
 
-    <script src="/assets/app.js?v=20260610-9"></script>
+    <script src="/assets/app.js?v=20260610-10"></script>
   </body>
 </html>

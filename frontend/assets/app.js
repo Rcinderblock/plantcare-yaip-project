@@ -261,13 +261,8 @@ function speciesImageMarkup(species) {
   return `<img src="${escapeHtml(species.image_url)}" alt="${escapeHtml(species.name)}" loading="eager">`;
 }
 
-function renderSpecies() {
-  const grid = $("#species-grid");
-  if (!state.species.length) {
-    grid.innerHTML = `<div class="empty">Каталог пока пуст. Скоро здесь появятся растения.</div>`;
-    return;
-  }
-  grid.innerHTML = state.species.map((item) => `
+function speciesCardMarkup(item) {
+  return `
     <article class="species-card">
       <div class="species-image">${speciesImageMarkup(item)}</div>
       <div class="species-card-body">
@@ -284,7 +279,29 @@ function renderSpecies() {
         <button class="button species-action" data-add-species="${item.id}">Добавить в мой сад</button>
       </div>
     </article>
-  `).join("");
+  `;
+}
+
+function renderSpeciesPreview() {
+  const grid = $("#species-grid");
+  const cta = $("#catalog-preview-cta");
+  if (!state.species.length) {
+    grid.innerHTML = `<div class="empty">Каталог пока пуст. Скоро здесь появятся растения.</div>`;
+    if (cta) cta.hidden = true;
+    return;
+  }
+  grid.innerHTML = state.species.slice(0, 4).map(speciesCardMarkup).join("");
+  if (cta) cta.hidden = false;
+}
+
+function renderCatalog() {
+  const grid = $("#catalog-grid");
+  if (!grid) return;
+  if (!state.species.length) {
+    grid.innerHTML = `<div class="empty">Каталог пока пуст. Скоро здесь появятся растения.</div>`;
+    return;
+  }
+  grid.innerHTML = state.species.map(speciesCardMarkup).join("");
 }
 
 function selectSpeciesForPlant(speciesId) {
@@ -422,7 +439,8 @@ async function loadPublicData() {
   state.stats = stats;
   state.species = species;
   renderStats();
-  renderSpecies();
+  renderSpeciesPreview();
+  renderCatalog();
   fillSelects();
   updateHeroSummary();
 }

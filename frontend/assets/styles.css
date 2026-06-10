@@ -567,6 +567,30 @@ code {
   grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
 }
 
+.catalog-preview-cta,
+.catalog-note {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.catalog-preview-cta {
+  margin-top: 18px;
+  padding-left: 4px;
+}
+
+.catalog-preview-cta p,
+.catalog-note p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.catalog-note {
+  margin-bottom: 18px;
+}
+
 .stat-card,
 .card {
   padding: 20px;
@@ -1419,6 +1443,12 @@ select[multiple] {
   .species-import-box,
   .species-import-form {
     grid-template-columns: 1fr;
+  }
+
+  .catalog-preview-cta,
+  .catalog-note {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .form-span-2 {
