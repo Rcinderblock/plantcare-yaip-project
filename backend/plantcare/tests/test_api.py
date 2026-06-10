@@ -11,7 +11,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from plantcare.models import CareLog, CareTask, Collection, PlantSpecies, UserPlant
-from plantcare.services import EncyclopediaEntry, WeatherSnapshot
+from plantcare.services import EncyclopediaEntry, EncyclopediaService, WeatherSnapshot
 
 
 @pytest.fixture
@@ -308,6 +308,74 @@ def test_encyclopedia_search_handles_wikipedia_timeout(monkeypatch):
     assert response.status_code == 200
     assert response.data["available"] is False
     assert response.data["results"] == []
+
+
+def test_encyclopedia_service_filters_non_plant_pages(monkeypatch):
+    class FakeWikipediaResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "query": {
+                    "pages": {
+                        "1": {
+                            "title": "Лилия",
+                            "index": 1,
+                            "extract": "Лилия - род многолетних травянистых растений.",
+                            "fullurl": "https://ru.wikipedia.org/wiki/Лилия",
+                            "categories": [{"title": "Категория:Роды растений"}],
+                        },
+                        "2": {
+                            "title": "Лилия (фильм)",
+                            "index": 2,
+                            "extract": "Лилия - художественный фильм.",
+                            "fullurl": "https://ru.wikipedia.org/wiki/Лилия_(фильм)",
+                            "categories": [{"title": "Категория:Фильмы"}],
+                        },
+                    }
+                }
+            }
+
+    monkeypatch.setattr("plantcare.services.requests.get", lambda *args, **kwargs: FakeWikipediaResponse())
+
+    results = EncyclopediaService().search("лилия")
+
+    assert [entry.title for entry in results] == ["Лилия"]
+
+
+@pytest.mark.django_db
+def test_species_can_be_created_from_encyclopedia(auth_client, monkeypatch):
+    monkeypatch.setattr(
+        "plantcare.views.EncyclopediaService.search",
+        lambda self, query, limit=1: [
+            EncyclopediaEntry(
+                title="Калатея",
+                extract="Калатея - род растений семейства Марантовые.",
+                source_url="https://ru.wikipedia.org/wiki/Калатея",
+                provider="Wikipedia",
+                available=True,
+                thumbnail_url="https://upload.wikimedia.org/calathea.jpg",
+            )
+        ],
+    )
+
+    response = auth_client.post(reverse("species-from-encyclopedia"), {"query": "калатея"}, format="json")
+
+    assert response.status_code == 201
+    assert response.data["created"] is True
+    assert response.data["species"]["name"] == "Калатея"
+    assert PlantSpecies.objects.filter(name="Калатея").exists()
+
+
+@pytest.mark.django_db
+def test_species_from_encyclopedia_rejects_non_plant_result(auth_client, monkeypatch):
+    monkeypatch.setattr("plantcare.views.EncyclopediaService.search", lambda self, query, limit=1: [])
+
+    response = auth_client.post(reverse("species-from-encyclopedia"), {"query": "титаник"}, format="json")
+
+    assert response.status_code == 400
+    assert "query" in response.data
 
 
 @pytest.mark.django_db

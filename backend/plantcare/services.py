@@ -164,15 +164,47 @@ class EncyclopediaService:
     provider = "Wikipedia"
     plant_markers = (
         "растени",
+        "ботан",
+        "флор",
         "семейств",
-        "род ",
-        "вид ",
-        "трав",
-        "дерев",
+        "род растений",
+        "вид растений",
+        "травянист",
         "кустар",
         "лиан",
         "суккулент",
         "цветок",
+        "цветков",
+        "комнатн",
+        "культурных растений",
+    )
+    plant_category_markers = (
+        "растени",
+        "ботан",
+        "флора",
+        "роды",
+        "виды",
+        "семейства",
+        "цветковые",
+        "суккуленты",
+        "таксоны",
+    )
+    non_plant_markers = (
+        "фильм",
+        "песня",
+        "альбом",
+        "роман",
+        "книга",
+        "персонаж",
+        "актёр",
+        "актрис",
+        "музыкальн",
+        "группа",
+        "компания",
+        "фамилия",
+        "имя",
+        "значения",
+        "населённый пункт",
     )
 
     def fetch_species_entry(self, species) -> EncyclopediaEntry:
@@ -202,13 +234,16 @@ class EncyclopediaService:
         if not pages:
             pages = self._search_pages(f"{normalized_query}~")
 
+        plant_pages = [page for page in pages if self._page_looks_like_plant(page)]
+        if not plant_pages:
+            return []
+
         ranked = sorted(
-            (self._page_to_entry(page) for page in pages),
+            (self._page_to_entry(page) for page in plant_pages),
             key=lambda entry: self._entry_score(normalized_query, entry),
             reverse=True,
         )
-        plant_results = [entry for entry in ranked if self._looks_like_plant(entry)]
-        return (plant_results or ranked)[:limit]
+        return ranked[:limit]
 
     def _search_pages(self, query: str) -> list[dict]:
         response = requests.get(
@@ -219,12 +254,13 @@ class EncyclopediaService:
                 "gsrsearch": query,
                 "gsrnamespace": 0,
                 "gsrlimit": 8,
-                "prop": "extracts|pageimages|info",
+                "prop": "extracts|pageimages|info|categories",
                 "exintro": 1,
                 "explaintext": 1,
                 "piprop": "thumbnail",
                 "pithumbsize": 900,
                 "inprop": "url",
+                "cllimit": 20,
                 "redirects": 1,
                 "format": "json",
                 "utf8": 1,
@@ -251,6 +287,15 @@ class EncyclopediaService:
     def _looks_like_plant(self, entry: EncyclopediaEntry) -> bool:
         text = f"{entry.title} {entry.extract}".lower()
         return any(marker in text for marker in self.plant_markers)
+
+    def _page_looks_like_plant(self, page: dict) -> bool:
+        category_text = " ".join(category.get("title", "") for category in page.get("categories", [])).lower()
+        article_text = f"{page.get('title', '')} {page.get('extract', '')}".lower()
+        text = f"{article_text} {category_text}"
+        category_score = sum(marker in category_text for marker in self.plant_category_markers)
+        plant_score = sum(marker in article_text for marker in self.plant_markers)
+        non_plant_score = sum(marker in text for marker in self.non_plant_markers)
+        return category_score > 0 or (plant_score > 0 and non_plant_score == 0)
 
     def _entry_score(self, query: str, entry: EncyclopediaEntry) -> float:
         query_lower = query.lower()

@@ -320,6 +320,85 @@ class EncyclopediaSearchView(APIView):
         )
 
 
+class SpeciesFromEncyclopediaView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        tags=["Каталог видов"],
+        summary="Добавить вид растения из Wikipedia",
+        description=(
+            "Ищет растение во внешнем сервисе Wikipedia и создает новый вид в общем каталоге, только если "
+            "найдена статья, похожая именно на растение. Это позволяет пользователю добавить свой вид без "
+            "произвольного ручного ввода: источник названия и описания остается проверяемым."
+        ),
+        request=inline_serializer(
+            name="SpeciesFromEncyclopediaRequest",
+            fields={"query": drf_serializers.CharField(min_length=2, max_length=120)},
+        ),
+        responses={
+            200: inline_serializer(
+                name="SpeciesFromEncyclopediaExistingResponse",
+                fields={
+                    "created": drf_serializers.BooleanField(),
+                    "species": PlantSpeciesSerializer(),
+                    "source_url": drf_serializers.CharField(),
+                    "message": drf_serializers.CharField(),
+                },
+            ),
+            201: inline_serializer(
+                name="SpeciesFromEncyclopediaCreatedResponse",
+                fields={
+                    "created": drf_serializers.BooleanField(),
+                    "species": PlantSpeciesSerializer(),
+                    "source_url": drf_serializers.CharField(),
+                    "message": drf_serializers.CharField(),
+                },
+            ),
+        },
+    )
+    def post(self, request):
+        query = " ".join(str(request.data.get("query", "")).split())
+        if len(query) < 2:
+            return Response({"query": ["Введите не менее 2 символов."]}, status=status.HTTP_400_BAD_REQUEST)
+        if len(query) > 120:
+            return Response({"query": ["Введите не более 120 символов."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            results = EncyclopediaService().search(query, limit=1)
+        except requests.RequestException:
+            return Response(
+                {"query": ["Wikipedia временно недоступна. Попробуйте еще раз позже."]},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if not results:
+            return Response(
+                {"query": ["Не нашли статью о растении. Попробуйте другое или латинское название."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        entry = results[0]
+        species = PlantSpecies.objects.filter(name__iexact=entry.title).first()
+        created = False
+        if species is None:
+            image_url = entry.thumbnail_url if len(entry.thumbnail_url) <= PlantSpecies._meta.get_field("image_url").max_length else ""
+            species = PlantSpecies.objects.create(
+                name=entry.title[: PlantSpecies._meta.get_field("name").max_length],
+                description=entry.extract,
+                image_url=image_url,
+            )
+            created = True
+
+        return Response(
+            {
+                "created": created,
+                "species": PlantSpeciesSerializer(species).data,
+                "source_url": entry.source_url,
+                "message": "Вид добавлен из Wikipedia." if created else "Такой вид уже есть в каталоге.",
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
 class StatsView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]

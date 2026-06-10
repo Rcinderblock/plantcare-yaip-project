@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PlantCare</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260610-8" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-9" />
   </head>
   <body>
     <header class="topbar">
@@ -34,14 +34,14 @@
           <p class="lead">Добавьте растение. PlantCare подскажет, когда поливать, и сохранит историю ухода.</p>
           <div class="hero-actions">
             <button class="button primary" data-nav="plants">Начать уход</button>
-            <button class="button ghost" data-nav="dashboard">Открыть каталог</button>
+            <button class="button ghost" data-nav="dashboard" data-scroll-target="#catalog-section">Открыть каталог</button>
           </div>
         </div>
         <div class="hero-card garden-preview">
           <div class="plant-orb" aria-hidden="true"></div>
           <div class="preview-head">
             <span class="badge">Сегодня</span>
-            <h2>Монстера у окна</h2>
+            <h2 id="hero-plant-title">С чего начать</h2>
           </div>
           <p id="health-message">Готовим личный график ухода...</p>
           <div class="care-highlights">
@@ -86,7 +86,7 @@
             </li>
           </ol>
         </section>
-        <div class="section-title compact">
+        <div class="section-title compact" id="catalog-section">
           <h2>Популярные виды</h2>
           <p>Изучите растение в разделе «Справка» или добавьте его в личный сад после входа.</p>
         </div>
@@ -224,6 +224,20 @@
               <button class="button primary" type="submit">Добавить в мой сад</button>
             </div>
           </form>
+          <div class="species-import-box">
+            <div>
+              <strong>Не нашли нужный вид?</strong>
+              <p>Введите название, а PlantCare проверит статью в Wikipedia и добавит вид в каталог.</p>
+            </div>
+            <form class="species-import-form" id="species-import-form">
+              <label>
+                <span class="sr-only">Название вида для поиска в Wikipedia</span>
+                <input name="query" minlength="2" maxlength="120" placeholder="Например, калатея или calathea" required />
+              </label>
+              <button class="button" type="submit">Добавить вид из Wikipedia</button>
+            </form>
+            <p class="message compact-message" id="species-import-message"></p>
+          </div>
         </section>
         <p class="message" id="plants-message"></p>
         <div class="plant-grid" id="plants-grid"></div>
@@ -328,6 +342,6 @@
       </section>
     </main>
 
-    <script src="/assets/app.js?v=20260610-8"></script>
+    <script src="/assets/app.js?v=20260610-9"></script>
   </body>
 </html>

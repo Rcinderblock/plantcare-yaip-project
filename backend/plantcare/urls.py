@@ -13,6 +13,7 @@ from .views import (
     PlantImportView,
     PlantSpeciesViewSet,
     RegisterView,
+    SpeciesFromEncyclopediaView,
     StatsView,
     UserPlantViewSet,
     WeatherRecommendationView,
@@ -26,9 +27,10 @@ router.register("care-logs", CareLogViewSet, basename="care-logs")
 router.register("collections", CollectionViewSet, basename="collections")
 
 urlpatterns = [
-    path("", include(router.urls)),
     path("stats/", StatsView.as_view(), name="stats"),
     path("encyclopedia/search/", EncyclopediaSearchView.as_view(), name="encyclopedia-search"),
+    path("species/from-encyclopedia/", SpeciesFromEncyclopediaView.as_view(), name="species-from-encyclopedia"),
+    path("", include(router.urls)),
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/token/", CookieTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),

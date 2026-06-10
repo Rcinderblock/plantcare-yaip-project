@@ -900,6 +900,40 @@ code {
   justify-content: flex-start;
 }
 
+.species-import-box {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 22px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-muted);
+  padding: 18px;
+}
+
+.species-import-box strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.species-import-box p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.species-import-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.compact-message {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
 .plant-grid,
 .collection-grid {
   display: grid;
@@ -1381,7 +1415,9 @@ select[multiple] {
   }
 
   .plant-form-grid,
-  .collection-form-grid {
+  .collection-form-grid,
+  .species-import-box,
+  .species-import-form {
     grid-template-columns: 1fr;
   }
 

@@ -8,6 +8,7 @@ const state = {
   collections: [],
   stats: null,
   authMode: "login",
+  pendingSpeciesId: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -169,6 +170,7 @@ function setActivePage(page) {
   $$(".page").forEach((node) => node.classList.toggle("active", node.id === `${nextPage}-page`));
   $$("[data-nav]").forEach((node) => node.classList.toggle("active", node.dataset.nav === nextPage));
   history.replaceState(null, "", `#${nextPage}`);
+  return nextPage;
 }
 
 function setAuthMode(mode) {
@@ -229,6 +231,29 @@ function renderStats() {
   `).join("");
 }
 
+function scrollToElement(selector) {
+  const target = document.querySelector(selector);
+  if (!target) return;
+  requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+function updateHeroSummary(prefix = "") {
+  const title = $("#hero-plant-title");
+  const message = $("#health-message");
+  if (!title || !message) return;
+
+  const prefixText = prefix ? `${prefix} ` : "";
+  if (state.user && state.plants.length) {
+    const plant = state.plants[0];
+    title.textContent = plant.nickname;
+    message.textContent = `${prefixText}Следующий полив: ${formatDate(plant.next_watering_due)}. Откройте карточку ухода, чтобы увидеть погоду и записать действие.`;
+    return;
+  }
+
+  title.textContent = "С чего начать";
+  message.textContent = `${prefixText}Нажмите «Добавить в мой сад» на карточке вида ниже. Если нужного вида нет, добавьте его в разделе «Мой сад» через Wikipedia.`;
+}
+
 function speciesImageMarkup(species) {
   if (!species.image_url) {
     return `<div class="species-image-placeholder">${escapeHtml(species.name.slice(0, 1))}</div>`;
@@ -260,6 +285,24 @@ function renderSpecies() {
       </div>
     </article>
   `).join("");
+}
+
+function selectSpeciesForPlant(speciesId) {
+  setActivePage("plants");
+  const select = $('#plant-form select[name="species"]');
+  if (select) select.value = String(speciesId);
+  $('#plant-form input[name="nickname"]')?.focus();
+  showMessage("plants-message", "Вид выбран. Заполните имя растения и сохраните его в личный сад.");
+}
+
+function continueAfterAuth() {
+  if (state.pendingSpeciesId) {
+    const speciesId = state.pendingSpeciesId;
+    state.pendingSpeciesId = null;
+    selectSpeciesForPlant(speciesId);
+    return;
+  }
+  setActivePage("plants");
 }
 
 function fillSelects() {
@@ -381,7 +424,7 @@ async function loadPublicData() {
   renderStats();
   renderSpecies();
   fillSelects();
-  $("#health-message").textContent = "Выберите растение из каталога, и PlantCare соберет для него личный график ухода.";
+  updateHeroSummary();
 }
 
 async function loadPrivateData() {
@@ -393,6 +436,7 @@ async function loadPrivateData() {
     renderPlants();
     renderTasks();
     renderCollections();
+    updateHeroSummary();
     return;
   }
   const [plants, tasks, logs, collections] = await Promise.all([
@@ -408,6 +452,7 @@ async function loadPrivateData() {
   renderPlants();
   renderTasks();
   renderCollections();
+  updateHeroSummary();
 }
 
 async function loadSession() {
@@ -429,6 +474,22 @@ async function loadEverything() {
   } catch (error) {
     $("#health-message").textContent = error.message;
   }
+}
+
+async function refreshRecommendations() {
+  const button = $("#refresh-all-button");
+  const previousText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Обновляем...";
+  $("#health-message").textContent = "Обновляем каталог, личный сад и рекомендации...";
+  await loadEverything();
+  const time = new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date());
+  updateHeroSummary(`Обновлено в ${time}.`);
+  button.disabled = false;
+  button.textContent = previousText;
 }
 
 async function login(username, password) {
@@ -659,7 +720,7 @@ function bindForms() {
     try {
       await login(form.get("username"), form.get("password"));
       showMessage("auth-message", "Вход выполнен.");
-      setActivePage("plants");
+      continueAfterAuth();
     } catch (error) {
       showMessage("auth-message", error.message, true);
     }
@@ -679,7 +740,7 @@ function bindForms() {
       });
       await login(form.get("username"), form.get("password"));
       showMessage("auth-message", "Регистрация выполнена.");
-      setActivePage("plants");
+      continueAfterAuth();
     } catch (error) {
       showMessage("auth-message", error.message, true);
     }
@@ -707,6 +768,29 @@ function bindForms() {
       showMessage("plants-message", "Растение добавлено.");
     } catch (error) {
       showMessage("plants-message", error.message, true);
+    }
+  });
+
+  $("#species-import-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const query = String(form.get("query") || "").trim();
+    showMessage("species-import-message", "Ищем растение в Wikipedia...");
+    try {
+      const result = await api("/species/from-encyclopedia/", {
+        method: "POST",
+        body: { query },
+      });
+      await loadPublicData();
+      const speciesId = result.species.id;
+      selectSpeciesForPlant(speciesId);
+      event.target.reset();
+      showMessage(
+        "species-import-message",
+        `${result.message} Вид «${result.species.name}» выбран в форме выше.`
+      );
+    } catch (error) {
+      showMessage("species-import-message", error.message, true);
     }
   });
 
@@ -774,7 +858,14 @@ function bindClicks() {
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       event.preventDefault();
-      setActivePage(nav.dataset.nav);
+      const openedPage = setActivePage(nav.dataset.nav);
+      if (openedPage === "auth" && nav.dataset.nav !== "auth") {
+        setAuthMode("login");
+        showMessage("auth-message", "Войдите или зарегистрируйтесь, чтобы создать личный сад и график ухода.");
+      }
+      if (nav.dataset.scrollTarget) {
+        scrollToElement(nav.dataset.scrollTarget);
+      }
       return;
     }
 
@@ -788,11 +879,13 @@ function bindClicks() {
     const addSpeciesButton = event.target.closest("[data-add-species]");
     if (addSpeciesButton) {
       const speciesId = addSpeciesButton.dataset.addSpecies;
-      setActivePage("plants");
       if (state.user) {
-        const select = $('#plant-form select[name="species"]');
-        if (select) select.value = speciesId;
-        $('#plant-form input[name="nickname"]')?.focus();
+        selectSpeciesForPlant(speciesId);
+      } else {
+        state.pendingSpeciesId = speciesId;
+        setAuthMode("login");
+        setActivePage("auth");
+        showMessage("auth-message", "Войдите или зарегистрируйтесь, и выбранный вид сразу откроется в форме добавления.");
       }
       return;
     }
@@ -813,7 +906,7 @@ function bindClicks() {
     setAuthMode("login");
     setActivePage("auth");
   });
-  $("#refresh-all-button").addEventListener("click", loadEverything);
+  $("#refresh-all-button").addEventListener("click", refreshRecommendations);
   $("#reload-plants-button").addEventListener("click", loadPrivateData);
   $("#theme-toggle").addEventListener("click", () => {
     const currentTheme = document.documentElement.dataset.theme;
