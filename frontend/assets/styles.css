@@ -157,13 +157,18 @@ code {
 }
 
 .nav button,
+.nav a,
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--text);
   padding: 10px 15px;
   font-weight: 800;
+  text-decoration: none;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
@@ -172,11 +177,13 @@ code {
 }
 
 .nav button:hover,
+.nav a:hover,
 .button:hover {
   transform: translateY(-1px);
 }
 
-.nav button.active {
+.nav button.active,
+.nav a.active {
   border-color: var(--border);
   background: var(--paper-soft);
   color: var(--primary-dark);
@@ -434,6 +441,7 @@ code {
   margin: 36px 0 16px;
 }
 
+.section-title h1,
 .section-title h2,
 .panel h2,
 .panel h3,
@@ -442,6 +450,7 @@ code {
   letter-spacing: -0.025em;
 }
 
+.section-title h1,
 .section-title h2 {
   font-size: clamp(1.65rem, 3vw, 2.35rem);
 }
@@ -652,6 +661,7 @@ code {
   margin: 42px 0 24px;
 }
 
+.guide-intro h1,
 .guide-intro h2 {
   margin: 0;
   font-size: 2.4rem;
@@ -1302,13 +1312,15 @@ textarea:focus {
 }
 
 :root[data-theme="dark"] .button:not(.primary),
-:root[data-theme="dark"] .nav button {
+:root[data-theme="dark"] .nav button,
+:root[data-theme="dark"] .nav a {
   border-color: var(--border);
   background: var(--surface-muted);
   color: var(--text);
 }
 
 :root[data-theme="dark"] .nav button.active,
+:root[data-theme="dark"] .nav a.active,
 :root[data-theme="dark"] .button:not(.primary):hover,
 :root[data-theme="dark"] #logout-button {
   border-color: var(--border-strong) !important;
@@ -1481,10 +1493,12 @@ select[multiple] {
     width: 100%;
   }
 
-  .nav button {
+  .nav button,
+  .nav a {
     width: 100%;
     padding-inline: 8px;
     font-size: 0.9rem;
+    text-align: center;
   }
 
   .search-form {

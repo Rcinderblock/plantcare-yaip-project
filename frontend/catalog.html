@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Каталог растений — PlantCare</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
+  </head>
+  <body data-page="catalog">
+    <header class="topbar">
+      <a class="brand" href="/index.html" data-nav="home" aria-label="PlantCare">
+        <span class="brand-mark">P</span>
+        <span>PlantCare</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="/catalog.html" data-nav="catalog">Каталог</a>
+        <a href="/guide.html" data-nav="guide">Справка</a>
+        <a href="/plants.html" data-nav="plants">Мой сад</a>
+        <a href="/calendar.html" data-nav="calendar">Календарь</a>
+        <a href="/profile.html" data-nav="profile">Профиль</a>
+      </nav>
+      <div class="session">
+        <span id="session-label">Проверяем сессию...</span>
+        <button class="button small" id="logout-button" hidden>Выйти</button>
+        <button class="button small primary" id="login-open-button">Войти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Каталог</p>
+          <h1>Все виды растений</h1>
+          <p class="section-description">
+            Выберите вид и добавьте его в личный сад. Если нужного растения нет, его можно проверить
+            по Wikipedia и добавить в разделе «Мой сад».
+          </p>
+        </div>
+        <a class="button" href="/guide.html" data-nav="guide">Найти справку</a>
+      </div>
+
+      <section class="panel catalog-note">
+        <div>
+          <h2>Как пользоваться каталогом</h2>
+          <p>
+            Карточки показывают базовый интервал полива, рекомендуемую влажность и безопасность для питомцев.
+          </p>
+        </div>
+        <a class="button primary" href="/plants.html" data-nav="plants">Перейти в мой сад</a>
+      </section>
+
+      <div class="grid" id="catalog-grid"></div>
+    </main>
+
+    <script src="/assets/app.js?v=20260610-11"></script>
+  </body>
+</html>

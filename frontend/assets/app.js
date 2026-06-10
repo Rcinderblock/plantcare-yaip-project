@@ -8,11 +8,22 @@ const state = {
   collections: [],
   stats: null,
   authMode: "login",
-  pendingSpeciesId: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+const PAGE_ROUTES = {
+  home: "/index.html",
+  catalog: "/catalog.html",
+  guide: "/guide.html",
+  auth: "/auth.html",
+  plants: "/plants.html",
+  calendar: "/calendar.html",
+  profile: "/profile.html",
+};
+const PRIVATE_PAGES = new Set(["plants", "calendar", "profile"]);
+const PENDING_SPECIES_KEY = "plantcare_pending_species";
 
 const STAT_CARDS = [
   {
@@ -162,15 +173,44 @@ async function fetchAll(path) {
   return items;
 }
 
-function setActivePage(page) {
-  const privatePages = new Set(["plants", "calendar", "profile"]);
-  const nextPage = privatePages.has(page) && !state.user ? "auth" : page;
-  const hero = $("#hero-section");
-  if (hero) hero.hidden = nextPage !== "dashboard";
-  $$(".page").forEach((node) => node.classList.toggle("active", node.id === `${nextPage}-page`));
-  $$("[data-nav]").forEach((node) => node.classList.toggle("active", node.dataset.nav === nextPage));
-  history.replaceState(null, "", `#${nextPage}`);
-  return nextPage;
+function currentPage() {
+  return document.body.dataset.page || "home";
+}
+
+function normalizePage(page) {
+  return page === "dashboard" ? "home" : page;
+}
+
+function nextPageFromUrl() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && PAGE_ROUTES[next] ? next : null;
+}
+
+function activateCurrentNav() {
+  const page = currentPage();
+  $$("[data-nav]").forEach((node) => {
+    node.classList.toggle("active", node.dataset.nav === page);
+  });
+}
+
+function navigateTo(page, options = {}) {
+  let targetPage = normalizePage(page);
+  let query = options.query || "";
+
+  if (PRIVATE_PAGES.has(targetPage) && !state.user) {
+    const params = new URLSearchParams(query.replace(/^\?/, ""));
+    params.set("next", targetPage);
+    targetPage = "auth";
+    query = `?${params.toString()}`;
+  }
+
+  if (targetPage === currentPage() && !query) {
+    if (options.scrollTarget) scrollToElement(options.scrollTarget);
+    return targetPage;
+  }
+
+  window.location.href = `${PAGE_ROUTES[targetPage] || PAGE_ROUTES.home}${query}`;
+  return targetPage;
 }
 
 function setAuthMode(mode) {
@@ -207,18 +247,19 @@ function renderSession() {
   const loginButton = $("#login-open-button");
   const logoutButton = $("#logout-button");
   if (state.user) {
-    label.textContent = `Вы вошли как ${state.user.username}`;
-    loginButton.hidden = true;
-    logoutButton.hidden = false;
+    if (label) label.textContent = `Вы вошли как ${state.user.username}`;
+    if (loginButton) loginButton.hidden = true;
+    if (logoutButton) logoutButton.hidden = false;
   } else {
-    label.textContent = "Гость";
-    loginButton.hidden = false;
-    logoutButton.hidden = true;
+    if (label) label.textContent = "Гость";
+    if (loginButton) loginButton.hidden = currentPage() === "auth";
+    if (logoutButton) logoutButton.hidden = true;
   }
 }
 
 function renderStats() {
   const grid = $("#stats-grid");
+  if (!grid) return;
   if (!state.stats) {
     grid.innerHTML = `<div class="empty">Показатели скоро появятся.</div>`;
     return;
@@ -285,6 +326,7 @@ function speciesCardMarkup(item) {
 function renderSpeciesPreview() {
   const grid = $("#species-grid");
   const cta = $("#catalog-preview-cta");
+  if (!grid) return;
   if (!state.species.length) {
     grid.innerHTML = `<div class="empty">Каталог пока пуст. Скоро здесь появятся растения.</div>`;
     if (cta) cta.hidden = true;
@@ -305,7 +347,11 @@ function renderCatalog() {
 }
 
 function selectSpeciesForPlant(speciesId) {
-  setActivePage("plants");
+  if (currentPage() !== "plants") {
+    sessionStorage.setItem(PENDING_SPECIES_KEY, String(speciesId));
+    navigateTo("plants");
+    return;
+  }
   const select = $('#plant-form select[name="species"]');
   if (select) select.value = String(speciesId);
   $('#plant-form input[name="nickname"]')?.focus();
@@ -313,13 +359,15 @@ function selectSpeciesForPlant(speciesId) {
 }
 
 function continueAfterAuth() {
-  if (state.pendingSpeciesId) {
-    const speciesId = state.pendingSpeciesId;
-    state.pendingSpeciesId = null;
-    selectSpeciesForPlant(speciesId);
-    return;
-  }
-  setActivePage("plants");
+  navigateTo(nextPageFromUrl() || "plants");
+}
+
+function applyPendingSpeciesSelection() {
+  if (currentPage() !== "plants") return;
+  const speciesId = sessionStorage.getItem(PENDING_SPECIES_KEY);
+  if (!speciesId) return;
+  sessionStorage.removeItem(PENDING_SPECIES_KEY);
+  selectSpeciesForPlant(speciesId);
 }
 
 function fillSelects() {
@@ -355,6 +403,7 @@ function fillSelects() {
 function renderPlants() {
   fillSelects();
   const grid = $("#plants-grid");
+  if (!grid) return;
   if (!state.user) {
     grid.innerHTML = `<div class="empty">Войдите, чтобы увидеть личные растения.</div>`;
     return;
@@ -384,6 +433,7 @@ function renderPlants() {
 function renderTasks() {
   fillSelects();
   const list = $("#tasks-list");
+  if (!list) return;
   if (!state.user) {
     list.innerHTML = `<div class="empty">Войдите, чтобы увидеть календарь.</div>`;
     return;
@@ -410,6 +460,7 @@ function renderCollections() {
   if (profile) {
     profile.textContent = state.user ? `Пользователь: ${state.user.username}. Email: ${state.user.email || "не указан"}.` : "Войдите, чтобы увидеть профиль.";
   }
+  if (!grid) return;
   if (!state.user) {
     grid.innerHTML = `<div class="empty">Войдите, чтобы увидеть коллекции.</div>`;
     return;
@@ -490,16 +541,23 @@ async function loadEverything() {
     await loadPublicData();
     await loadPrivateData();
   } catch (error) {
-    $("#health-message").textContent = error.message;
+    const healthMessage = $("#health-message");
+    if (healthMessage) healthMessage.textContent = error.message;
+    else throw error;
   }
 }
 
 async function refreshRecommendations() {
   const button = $("#refresh-all-button");
+  if (!button) {
+    await loadEverything();
+    return;
+  }
   const previousText = button.textContent;
   button.disabled = true;
   button.textContent = "Обновляем...";
-  $("#health-message").textContent = "Обновляем каталог, личный сад и рекомендации...";
+  const healthMessage = $("#health-message");
+  if (healthMessage) healthMessage.textContent = "Обновляем каталог, личный сад и рекомендации...";
   await loadEverything();
   const time = new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit",
@@ -522,6 +580,7 @@ async function login(username, password) {
 
 function renderEncyclopediaResults(payload) {
   const container = $("#encyclopedia-results");
+  if (!container) return;
   if (!payload.results.length) {
     container.innerHTML = `
       <div class="empty-state">
@@ -566,22 +625,24 @@ function renderEncyclopediaResults(payload) {
 }
 
 async function searchEncyclopedia(query) {
+  const results = $("#encyclopedia-results");
+  if (!results) return;
   showMessage("encyclopedia-message", "Ищем в Wikipedia...");
-  $("#encyclopedia-results").innerHTML = `<div class="search-skeleton"></div>`;
+  results.innerHTML = `<div class="search-skeleton"></div>`;
   try {
     const payload = await api(`/encyclopedia/search/?q=${encodeURIComponent(query)}`);
     showMessage("encyclopedia-message", payload.available ? "" : payload.message, !payload.available);
     renderEncyclopediaResults(payload);
   } catch (error) {
     showMessage("encyclopedia-message", error.message, true);
-    $("#encyclopedia-results").innerHTML = "";
+    results.innerHTML = "";
   }
 }
 
 async function openPlant(plantId) {
   const detail = $("#plant-detail");
   const plant = state.plants.find((item) => item.id === Number(plantId));
-  if (!plant) return;
+  if (!detail || !plant) return;
   detail.hidden = false;
   detail.innerHTML = `
     <div class="section-title compact">
@@ -726,149 +787,174 @@ async function completeTask(taskId) {
 }
 
 function bindForms() {
-  $("#encyclopedia-search-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    await searchEncyclopedia(String(form.get("query") || "").trim());
-  });
+  const encyclopediaForm = $("#encyclopedia-search-form");
+  if (encyclopediaForm) {
+    encyclopediaForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      await searchEncyclopedia(String(form.get("query") || "").trim());
+    });
+  }
 
-  $("#login-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    try {
-      await login(form.get("username"), form.get("password"));
-      showMessage("auth-message", "Вход выполнен.");
-      continueAfterAuth();
-    } catch (error) {
-      showMessage("auth-message", error.message, true);
-    }
-  });
+  const loginForm = $("#login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      try {
+        await login(form.get("username"), form.get("password"));
+        showMessage("auth-message", "Вход выполнен.");
+        continueAfterAuth();
+      } catch (error) {
+        showMessage("auth-message", error.message, true);
+      }
+    });
+  }
 
-  $("#register-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    try {
-      await api("/auth/register/", {
-        method: "POST",
-        body: {
-          username: form.get("username"),
-          email: form.get("email"),
-          password: form.get("password"),
-        },
-      });
-      await login(form.get("username"), form.get("password"));
-      showMessage("auth-message", "Регистрация выполнена.");
-      continueAfterAuth();
-    } catch (error) {
-      showMessage("auth-message", error.message, true);
-    }
-  });
+  const registerForm = $("#register-form");
+  if (registerForm) {
+    registerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      try {
+        await api("/auth/register/", {
+          method: "POST",
+          body: {
+            username: form.get("username"),
+            email: form.get("email"),
+            password: form.get("password"),
+          },
+        });
+        await login(form.get("username"), form.get("password"));
+        showMessage("auth-message", "Регистрация выполнена.");
+        continueAfterAuth();
+      } catch (error) {
+        showMessage("auth-message", error.message, true);
+      }
+    });
+  }
 
-  $("#plant-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    try {
-      await api("/plants/", {
-        method: "POST",
-        body: {
-          species: Number(form.get("species")),
-          nickname: form.get("nickname"),
-          location_type: form.get("location_type"),
-          planted_at: form.get("planted_at") || null,
-          watering_interval_override: form.get("watering_interval_override")
-            ? Number(form.get("watering_interval_override"))
-            : null,
-          notes: form.get("notes"),
-        },
-      });
-      event.target.reset();
-      await loadPrivateData();
-      showMessage("plants-message", "Растение добавлено.");
-    } catch (error) {
-      showMessage("plants-message", error.message, true);
-    }
-  });
+  const plantForm = $("#plant-form");
+  if (plantForm) {
+    plantForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      try {
+        await api("/plants/", {
+          method: "POST",
+          body: {
+            species: Number(form.get("species")),
+            nickname: form.get("nickname"),
+            location_type: form.get("location_type"),
+            planted_at: form.get("planted_at") || null,
+            watering_interval_override: form.get("watering_interval_override")
+              ? Number(form.get("watering_interval_override"))
+              : null,
+            notes: form.get("notes"),
+          },
+        });
+        event.target.reset();
+        await loadPrivateData();
+        showMessage("plants-message", "Растение добавлено.");
+      } catch (error) {
+        showMessage("plants-message", error.message, true);
+      }
+    });
+  }
 
-  $("#species-import-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    const query = String(form.get("query") || "").trim();
-    showMessage("species-import-message", "Ищем растение в Wikipedia...");
-    try {
-      const result = await api("/species/from-encyclopedia/", {
-        method: "POST",
-        body: { query },
-      });
-      await loadPublicData();
-      const speciesId = result.species.id;
-      selectSpeciesForPlant(speciesId);
-      event.target.reset();
-      showMessage(
-        "species-import-message",
-        `${result.message} Вид «${result.species.name}» выбран в форме выше.`
-      );
-    } catch (error) {
-      showMessage("species-import-message", error.message, true);
-    }
-  });
+  const speciesImportForm = $("#species-import-form");
+  if (speciesImportForm) {
+    speciesImportForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const query = String(form.get("query") || "").trim();
+      showMessage("species-import-message", "Ищем растение в Wikipedia...");
+      try {
+        const result = await api("/species/from-encyclopedia/", {
+          method: "POST",
+          body: { query },
+        });
+        await loadPublicData();
+        selectSpeciesForPlant(result.species.id);
+        event.target.reset();
+        showMessage(
+          "species-import-message",
+          `${result.message} Вид «${result.species.name}» выбран в форме выше.`
+        );
+      } catch (error) {
+        showMessage("species-import-message", error.message, true);
+      }
+    });
+  }
 
-  $("#task-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    try {
-      await api("/care-tasks/", {
-        method: "POST",
-        body: {
-          plant: Number(form.get("plant")),
-          task_type: form.get("task_type"),
-          due_date: form.get("due_date"),
-          notes: form.get("notes"),
-        },
-      });
-      event.target.reset();
-      $('#task-form input[name="due_date"]').value = todayIso();
-      await loadPrivateData();
-      showMessage("calendar-message", "Задача добавлена.");
-    } catch (error) {
-      showMessage("calendar-message", error.message, true);
-    }
-  });
+  const taskForm = $("#task-form");
+  if (taskForm) {
+    taskForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      try {
+        await api("/care-tasks/", {
+          method: "POST",
+          body: {
+            plant: Number(form.get("plant")),
+            task_type: form.get("task_type"),
+            due_date: form.get("due_date"),
+            notes: form.get("notes"),
+          },
+        });
+        event.target.reset();
+        const dueDate = $('#task-form input[name="due_date"]');
+        if (dueDate) dueDate.value = todayIso();
+        await loadPrivateData();
+        showMessage("calendar-message", "Задача добавлена.");
+      } catch (error) {
+        showMessage("calendar-message", error.message, true);
+      }
+    });
+  }
 
-  $("#import-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    try {
-      const result = await api("/import/plants/", { method: "POST", body: form });
-      await loadPrivateData();
-      showMessage("profile-message", `Импортировано: ${result.created_count}. Ошибок: ${result.errors.length}.`);
-      event.target.reset();
-      $("#import-file-name").textContent = "Файл не выбран";
-    } catch (error) {
-      showMessage("profile-message", error.message, true);
-    }
-  });
+  const importForm = $("#import-form");
+  if (importForm) {
+    importForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      try {
+        const result = await api("/import/plants/", { method: "POST", body: form });
+        await loadPrivateData();
+        showMessage("profile-message", `Импортировано: ${result.created_count}. Ошибок: ${result.errors.length}.`);
+        event.target.reset();
+        const fileName = $("#import-file-name");
+        if (fileName) fileName.textContent = "Файл не выбран";
+      } catch (error) {
+        showMessage("profile-message", error.message, true);
+      }
+    });
+  }
 
-  $("#collection-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    const plantIds = Array.from(event.target.querySelectorAll('input[name="plant_ids"]:checked'))
-      .map((input) => Number(input.value));
-    try {
-      await api("/collections/", {
-        method: "POST",
-        body: {
-          name: form.get("name"),
-          description: form.get("description"),
-          plant_ids: plantIds,
-        },
-      });
-      event.target.reset();
-      await loadPrivateData();
-      showMessage("profile-message", "Коллекция создана.");
-    } catch (error) {
-      showMessage("profile-message", error.message, true);
-    }
-  });
+  const collectionForm = $("#collection-form");
+  if (collectionForm) {
+    collectionForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const plantIds = Array.from(event.target.querySelectorAll('input[name="plant_ids"]:checked'))
+        .map((input) => Number(input.value));
+      try {
+        await api("/collections/", {
+          method: "POST",
+          body: {
+            name: form.get("name"),
+            description: form.get("description"),
+            plant_ids: plantIds,
+          },
+        });
+        event.target.reset();
+        await loadPrivateData();
+        showMessage("profile-message", "Коллекция создана.");
+      } catch (error) {
+        showMessage("profile-message", error.message, true);
+      }
+    });
+  }
 }
 
 function bindClicks() {
@@ -876,14 +962,7 @@ function bindClicks() {
     const nav = event.target.closest("[data-nav]");
     if (nav) {
       event.preventDefault();
-      const openedPage = setActivePage(nav.dataset.nav);
-      if (openedPage === "auth" && nav.dataset.nav !== "auth") {
-        setAuthMode("login");
-        showMessage("auth-message", "Войдите или зарегистрируйтесь, чтобы создать личный сад и график ухода.");
-      }
-      if (nav.dataset.scrollTarget) {
-        scrollToElement(nav.dataset.scrollTarget);
-      }
+      navigateTo(nav.dataset.nav, { scrollTarget: nav.dataset.scrollTarget });
       return;
     }
 
@@ -900,10 +979,8 @@ function bindClicks() {
       if (state.user) {
         selectSpeciesForPlant(speciesId);
       } else {
-        state.pendingSpeciesId = speciesId;
-        setAuthMode("login");
-        setActivePage("auth");
-        showMessage("auth-message", "Войдите или зарегистрируйтесь, и выбранный вид сразу откроется в форме добавления.");
+        sessionStorage.setItem(PENDING_SPECIES_KEY, String(speciesId));
+        navigateTo("auth", { query: "?next=plants" });
       }
       return;
     }
@@ -920,43 +997,55 @@ function bindClicks() {
     }
   });
 
-  $("#login-open-button").addEventListener("click", () => {
-    setAuthMode("login");
-    setActivePage("auth");
-  });
-  $("#refresh-all-button").addEventListener("click", refreshRecommendations);
-  $("#reload-plants-button").addEventListener("click", loadPrivateData);
-  $("#theme-toggle").addEventListener("click", () => {
+  $("#login-open-button")?.addEventListener("click", () => navigateTo("auth"));
+  $("#refresh-all-button")?.addEventListener("click", refreshRecommendations);
+  $("#reload-plants-button")?.addEventListener("click", loadPrivateData);
+  $("#theme-toggle")?.addEventListener("click", () => {
     const currentTheme = document.documentElement.dataset.theme;
     applyTheme(currentTheme === "dark" ? "light" : "dark");
   });
-  $('#import-form input[name="file"]').addEventListener("change", (event) => {
-    $("#import-file-name").textContent = event.target.files?.[0]?.name || "Файл не выбран";
+  $('#import-form input[name="file"]')?.addEventListener("change", (event) => {
+    const fileName = $("#import-file-name");
+    if (fileName) fileName.textContent = event.target.files?.[0]?.name || "Файл не выбран";
   });
-  $("#logout-button").addEventListener("click", async () => {
+  $("#logout-button")?.addEventListener("click", async () => {
     try {
       await api("/auth/logout/", { method: "POST" }, false);
     } finally {
       state.user = null;
       renderSession();
-      await loadPrivateData();
-      setActivePage("dashboard");
+      navigateTo("home");
     }
   });
 }
 
 async function init() {
   initTheme();
-  $('#task-form input[name="due_date"]').value = todayIso();
+  activateCurrentNav();
+  const dueDate = $('#task-form input[name="due_date"]');
+  if (dueDate) dueDate.value = todayIso();
   bindClicks();
   bindForms();
-  setAuthMode("login");
+  if ($("#login-form")) setAuthMode("login");
   renderSession();
-  setActivePage((location.hash || "#dashboard").slice(1));
   await loadSession();
+
+  if (currentPage() === "auth" && state.user) {
+    navigateTo(nextPageFromUrl() || "plants");
+    return;
+  }
+
+  if (PRIVATE_PAGES.has(currentPage()) && !state.user) {
+    navigateTo("auth", { query: `?next=${currentPage()}` });
+    return;
+  }
+
   await loadEverything();
+  applyPendingSpeciesSelection();
 }
 
 init().catch((error) => {
-  $("#health-message").textContent = error.message;
+  const healthMessage = $("#health-message");
+  if (healthMessage) healthMessage.textContent = error.message;
+  else console.error(error);
 });

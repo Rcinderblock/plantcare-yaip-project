@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Вход и регистрация — PlantCare</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
+  </head>
+  <body data-page="auth">
+    <header class="topbar">
+      <a class="brand" href="/index.html" data-nav="home" aria-label="PlantCare">
+        <span class="brand-mark">P</span>
+        <span>PlantCare</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="/catalog.html" data-nav="catalog">Каталог</a>
+        <a href="/guide.html" data-nav="guide">Справка</a>
+        <a href="/plants.html" data-nav="plants">Мой сад</a>
+        <a href="/calendar.html" data-nav="calendar">Календарь</a>
+        <a href="/profile.html" data-nav="profile">Профиль</a>
+      </nav>
+      <div class="session">
+        <span id="session-label">Проверяем сессию...</span>
+        <button class="button small" id="logout-button" hidden>Выйти</button>
+        <button class="button small primary" id="login-open-button" hidden>Войти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Личный кабинет</p>
+          <h1 id="auth-title">Вход в аккаунт</h1>
+        </div>
+      </div>
+      <div class="auth-layout">
+        <aside class="auth-info panel">
+          <span class="badge">Личный сад</span>
+          <h2>Ваши растения доступны только вам</h2>
+          <p>
+            После входа можно сохранять растения, создавать задачи, вести историю ухода и собирать коллекции.
+          </p>
+        </aside>
+        <div class="auth-card panel">
+          <div class="segmented-control" role="tablist" aria-label="Выбор режима авторизации">
+            <button class="active" type="button" data-auth-tab="login">Вход</button>
+            <button type="button" data-auth-tab="register">Регистрация</button>
+          </div>
+          <form class="form auth-form" id="login-form" data-auth-panel="login">
+            <h2>Рады видеть снова</h2>
+            <label>
+              Логин
+              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
+            </label>
+            <label>
+              Пароль
+              <input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required />
+            </label>
+            <button class="button primary" type="submit">Войти</button>
+          </form>
+          <form class="form auth-form" id="register-form" data-auth-panel="register" hidden>
+            <h2>Создать аккаунт</h2>
+            <p class="muted">Логин от 3 до 30 символов, пароль от 8 до 128 символов.</p>
+            <label>
+              Логин
+              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
+            </label>
+            <label>
+              Email
+              <input name="email" type="email" maxlength="254" required />
+            </label>
+            <label>
+              Пароль
+              <input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
+            </label>
+            <button class="button primary" type="submit">Зарегистрироваться</button>
+          </form>
+        </div>
+      </div>
+      <p class="message" id="auth-message"></p>
+    </main>
+
+    <script src="/assets/app.js?v=20260610-11"></script>
+  </body>
+</html>

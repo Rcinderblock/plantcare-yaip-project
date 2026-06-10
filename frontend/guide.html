@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Справка о растениях — PlantCare</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
+  </head>
+  <body data-page="guide">
+    <header class="topbar">
+      <a class="brand" href="/index.html" data-nav="home" aria-label="PlantCare">
+        <span class="brand-mark">P</span>
+        <span>PlantCare</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="/catalog.html" data-nav="catalog">Каталог</a>
+        <a href="/guide.html" data-nav="guide">Справка</a>
+        <a href="/plants.html" data-nav="plants">Мой сад</a>
+        <a href="/calendar.html" data-nav="calendar">Календарь</a>
+        <a href="/profile.html" data-nav="profile">Профиль</a>
+      </nav>
+      <div class="session">
+        <span id="session-label">Проверяем сессию...</span>
+        <button class="button small" id="logout-button" hidden>Выйти</button>
+        <button class="button small primary" id="login-open-button">Войти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="guide-intro">
+        <div>
+          <p class="eyebrow">Энциклопедия растений</p>
+          <h1>Найдите растение по названию</h1>
+          <p>Можно вводить русское, латинское или неполное название. Небольшие опечатки тоже учитываются.</p>
+        </div>
+        <form class="search-form" id="encyclopedia-search-form">
+          <label class="search-field">
+            <span class="sr-only">Название растения</span>
+            <input name="query" minlength="2" maxlength="120" placeholder="Например: сансевиерия или monstera" required />
+          </label>
+          <button class="button primary" type="submit">Найти</button>
+        </form>
+      </section>
+      <p class="message" id="encyclopedia-message"></p>
+      <div class="encyclopedia-results" id="encyclopedia-results">
+        <div class="empty-state">
+          <strong>С чего начать?</strong>
+          <span>Введите название цветка, чтобы получить краткую справку и ссылку на полную статью.</span>
+        </div>
+      </div>
+    </main>
+
+    <script src="/assets/app.js?v=20260610-11"></script>
+  </body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Мой сад — PlantCare</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
+  </head>
+  <body data-page="plants">
+    <header class="topbar">
+      <a class="brand" href="/index.html" data-nav="home" aria-label="PlantCare">
+        <span class="brand-mark">P</span>
+        <span>PlantCare</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="/catalog.html" data-nav="catalog">Каталог</a>
+        <a href="/guide.html" data-nav="guide">Справка</a>
+        <a href="/plants.html" data-nav="plants">Мой сад</a>
+        <a href="/calendar.html" data-nav="calendar">Календарь</a>
+        <a href="/profile.html" data-nav="profile">Профиль</a>
+      </nav>
+      <div class="session">
+        <span id="session-label">Проверяем сессию...</span>
+        <button class="button small" id="logout-button" hidden>Выйти</button>
+        <button class="button small primary" id="login-open-button">Войти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Личный сад</p>
+          <h1>Мои растения</h1>
+          <p class="section-description">Добавьте растение один раз, а дальше отмечайте уход и следите за графиком.</p>
+        </div>
+        <button class="button" id="reload-plants-button">Обновить</button>
+      </div>
+
+      <section class="panel form-section">
+        <div class="form-section-head">
+          <div>
+            <h2>Новое растение</h2>
+            <p>Основные поля обязательны, дату и собственный интервал можно оставить пустыми.</p>
+          </div>
+        </div>
+        <form class="plant-form-grid" id="plant-form">
+          <label>
+            Вид
+            <select name="species" required></select>
+          </label>
+          <label>
+            Имя растения
+            <input name="nickname" maxlength="120" placeholder="Например, Монти" required />
+          </label>
+          <label>
+            Место
+            <select name="location_type">
+              <option value="indoor">В помещении</option>
+              <option value="balcony">На балконе</option>
+            </select>
+          </label>
+          <label>
+            Дата посадки
+            <input name="planted_at" type="date" />
+          </label>
+          <label>
+            Интервал полива
+            <input name="watering_interval_override" type="number" min="1" max="365" placeholder="По умолчанию для вида" />
+          </label>
+          <label class="form-span-2">
+            Заметки
+            <textarea name="notes" maxlength="1000" rows="3" placeholder="Особенности места, грунта или ухода"></textarea>
+          </label>
+          <div class="form-actions form-span-2">
+            <button class="button primary" type="submit">Добавить в мой сад</button>
+          </div>
+        </form>
+
+        <div class="species-import-box">
+          <div>
+            <strong>Не нашли нужный вид?</strong>
+            <p>Введите название, а PlantCare проверит статью в Wikipedia и добавит подтвержденный вид в каталог.</p>
+          </div>
+          <form class="species-import-form" id="species-import-form">
+            <label>
+              <span class="sr-only">Название вида для поиска в Wikipedia</span>
+              <input name="query" minlength="2" maxlength="120" placeholder="Например, калатея или calathea" required />
+            </label>
+            <button class="button" type="submit">Добавить вид из Wikipedia</button>
+          </form>
+          <p class="message compact-message" id="species-import-message"></p>
+        </div>
+      </section>
+
+      <p class="message" id="plants-message"></p>
+      <div class="plant-grid" id="plants-grid"></div>
+      <div class="panel" id="plant-detail" hidden></div>
+    </main>
+
+    <script src="/assets/app.js?v=20260610-11"></script>
+  </body>
+</html>

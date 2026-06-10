@@ -3,21 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PlantCare</title>
-    <link rel="stylesheet" href="/assets/styles.css?v=20260610-10" />
+    <title>PlantCare — домашний сад под контролем</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260610-11" />
   </head>
-  <body>
+  <body data-page="home">
     <header class="topbar">
-      <a class="brand" href="#dashboard" data-nav="dashboard" aria-label="PlantCare">
+      <a class="brand" href="/index.html" data-nav="home" aria-label="PlantCare">
         <span class="brand-mark">P</span>
         <span>PlantCare</span>
       </a>
-      <nav class="nav">
-        <button data-nav="catalog">Каталог</button>
-        <button data-nav="guide">Справка</button>
-        <button data-nav="plants">Мой сад</button>
-        <button data-nav="calendar">Календарь</button>
-        <button data-nav="profile">Профиль</button>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="/catalog.html" data-nav="catalog">Каталог</a>
+        <a href="/guide.html" data-nav="guide">Справка</a>
+        <a href="/plants.html" data-nav="plants">Мой сад</a>
+        <a href="/calendar.html" data-nav="calendar">Календарь</a>
+        <a href="/profile.html" data-nav="profile">Профиль</a>
       </nav>
       <div class="session">
         <span id="session-label">Проверяем сессию...</span>
@@ -27,14 +27,14 @@
     </header>
 
     <main class="container">
-      <section class="hero" id="hero-section">
+      <section class="hero">
         <div class="hero-copy">
           <p class="eyebrow">PlantCare для дома</p>
           <h1>Ваш домашний сад под контролем</h1>
           <p class="lead">Добавьте растение. PlantCare подскажет, когда поливать, и сохранит историю ухода.</p>
           <div class="hero-actions">
-            <button class="button primary" data-nav="plants">Начать уход</button>
-            <button class="button ghost" data-nav="catalog">Открыть каталог</button>
+            <a class="button primary" href="/plants.html" data-nav="plants">Начать уход</a>
+            <a class="button ghost" href="/catalog.html" data-nav="catalog">Открыть каталог</a>
           </div>
         </div>
         <div class="hero-card garden-preview">
@@ -62,315 +62,46 @@
         </div>
       </section>
 
-      <section class="page active" id="dashboard-page">
-        <section class="flow-panel" aria-labelledby="flow-title">
-          <div>
-            <h2 id="flow-title">Как это работает</h2>
-            <p>Три шага вместо таблиц и заметок в телефоне.</p>
-          </div>
-          <ol class="step-flow">
-            <li>
-              <span>1</span>
-              <strong>Выберите вид</strong>
-              <small>из каталога</small>
-            </li>
-            <li>
-              <span>2</span>
-              <strong>Добавьте растение</strong>
-              <small>с местом и заметками</small>
-            </li>
-            <li>
-              <span>3</span>
-              <strong>Отмечайте уход</strong>
-              <small>в календаре</small>
-            </li>
-          </ol>
-        </section>
-        <div class="section-title compact" id="catalog-section">
-          <h2>Каталог</h2>
-          <p>Нажмите «Добавить в мой сад» на карточке вида или откройте полный каталог по кнопке ниже.</p>
+      <section class="flow-panel" aria-labelledby="flow-title">
+        <div>
+          <h2 id="flow-title">Как это работает</h2>
+          <p>Три шага вместо таблиц и заметок в телефоне.</p>
         </div>
-        <div class="grid" id="species-grid"></div>
-        <div class="catalog-preview-cta" id="catalog-preview-cta">
-          <p>В каталоге можно сразу добавить вид в личный сад.</p>
-          <button class="button" type="button" data-nav="catalog">Показать еще</button>
-        </div>
-        <div class="section-title compact community-title">
-          <h2>Сообщество PlantCare</h2>
-        </div>
-        <div class="stats-grid" id="stats-grid"></div>
+        <ol class="step-flow">
+          <li>
+            <span>1</span>
+            <strong>Выберите вид</strong>
+            <small>из каталога</small>
+          </li>
+          <li>
+            <span>2</span>
+            <strong>Добавьте растение</strong>
+            <small>с местом и заметками</small>
+          </li>
+          <li>
+            <span>3</span>
+            <strong>Отмечайте уход</strong>
+            <small>в календаре</small>
+          </li>
+        </ol>
       </section>
 
-      <section class="page" id="catalog-page">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">Каталог</p>
-            <h2>Все виды, которые можно добавить в сад</h2>
-            <p class="section-description">
-              Нажмите «Добавить в мой сад» на карточке вида, чтобы выбрать его для личного ухода.
-              Если нужного растения нет в списке, откройте «Мой сад» и добавьте его из Wikipedia.
-            </p>
-          </div>
-          <button class="button" type="button" data-nav="guide">Открыть справку</button>
-        </div>
-        <section class="panel catalog-note">
-          <div>
-            <h3>Как пользоваться каталогом</h3>
-            <p>
-              Карточки показывают базовый полив, влажность и отношение к питомцам.
-              Вид можно сразу добавить в личный сад через кнопку на карточке.
-            </p>
-          </div>
-          <button class="button primary" type="button" data-nav="plants">Перейти в мой сад</button>
-        </section>
-        <div class="grid" id="catalog-grid"></div>
-      </section>
+      <div class="section-title compact" id="catalog-section">
+        <h2>Каталог</h2>
+        <p>Выберите вид для личного сада или откройте полный каталог.</p>
+      </div>
+      <div class="grid" id="species-grid"></div>
+      <div class="catalog-preview-cta" id="catalog-preview-cta">
+        <p>В полном каталоге доступны все добавленные виды.</p>
+        <a class="button" href="/catalog.html" data-nav="catalog">Показать еще</a>
+      </div>
 
-      <section class="page" id="guide-page">
-        <div class="guide-intro">
-          <div>
-            <p class="eyebrow">Энциклопедия растений</p>
-            <h2>Найдите растение по названию</h2>
-            <p>Можно вводить русское, латинское или неполное название. Небольшие опечатки тоже учитываются.</p>
-          </div>
-          <form class="search-form" id="encyclopedia-search-form">
-            <label class="search-field">
-              <span class="sr-only">Название растения</span>
-              <input name="query" minlength="2" maxlength="120" placeholder="Например: сансиверия или monstera" required />
-            </label>
-            <button class="button primary" type="submit">Найти</button>
-          </form>
-        </div>
-        <p class="message" id="encyclopedia-message"></p>
-        <div class="encyclopedia-results" id="encyclopedia-results">
-          <div class="empty-state">
-            <strong>С чего начать?</strong>
-            <span>Введите название цветка, чтобы получить краткую справку и ссылку на полную статью.</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="page" id="auth-page">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">Авторизация</p>
-            <h2 id="auth-title">Вход в аккаунт</h2>
-          </div>
-        </div>
-        <div class="auth-layout">
-          <aside class="auth-info panel">
-            <span class="badge">Личный сад</span>
-            <h3>Ваши растения будут доступны только вам</h3>
-            <p>
-              После входа можно сохранять растения, создавать задачи, вести историю ухода и собирать коллекции.
-              Каталог остается общим, а личный сад привязан к вашему аккаунту.
-            </p>
-          </aside>
-          <div class="auth-card panel">
-            <div class="segmented-control" role="tablist" aria-label="Выбор режима авторизации">
-              <button class="active" type="button" data-auth-tab="login">Вход</button>
-              <button type="button" data-auth-tab="register">Регистрация</button>
-            </div>
-            <form class="form auth-form" id="login-form" data-auth-panel="login">
-            <h3>Рады видеть снова</h3>
-            <label>
-              Логин
-              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
-            </label>
-            <label>
-              Пароль
-              <input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required />
-            </label>
-            <button class="button primary" type="submit">Войти</button>
-          </form>
-            <form class="form auth-form" id="register-form" data-auth-panel="register" hidden>
-            <h3>Создать аккаунт</h3>
-            <p class="muted">Придумайте логин от 3 до 30 символов и пароль от 8 символов.</p>
-            <label>
-              Логин
-              <input name="username" autocomplete="username" minlength="3" maxlength="30" required />
-            </label>
-            <label>
-              Email
-              <input name="email" type="email" maxlength="254" required />
-            </label>
-            <label>
-              Пароль
-              <input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required />
-            </label>
-            <button class="button primary" type="submit">Зарегистрироваться</button>
-          </form>
-          </div>
-        </div>
-        <p class="message" id="auth-message"></p>
-      </section>
-
-      <section class="page" id="plants-page">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">Личный сад</p>
-            <h2>Мои растения</h2>
-            <p class="section-description">Добавьте растение один раз, а дальше отмечайте уход и следите за графиком.</p>
-          </div>
-          <button class="button" id="reload-plants-button">Обновить</button>
-        </div>
-        <section class="panel form-section">
-          <div class="form-section-head">
-            <div>
-              <h3>Новое растение</h3>
-              <p>Основные поля обязательны, дату и собственный интервал можно оставить пустыми.</p>
-            </div>
-          </div>
-          <form class="plant-form-grid" id="plant-form">
-            <label>
-              Вид
-              <select name="species" required></select>
-            </label>
-            <label>
-              Имя растения
-              <input name="nickname" maxlength="120" placeholder="Например, Монти" required />
-            </label>
-            <label>
-              Место
-              <select name="location_type">
-                <option value="indoor">В помещении</option>
-                <option value="balcony">На балконе</option>
-              </select>
-            </label>
-            <label>
-              Дата посадки
-              <input name="planted_at" type="date" />
-            </label>
-            <label>
-              Интервал полива
-              <input name="watering_interval_override" type="number" min="1" max="365" placeholder="По умолчанию для вида" />
-            </label>
-            <label class="form-span-2">
-              Заметки
-              <textarea name="notes" maxlength="1000" rows="3" placeholder="Особенности места, грунта или ухода"></textarea>
-            </label>
-            <div class="form-actions form-span-2">
-              <button class="button primary" type="submit">Добавить в мой сад</button>
-            </div>
-          </form>
-          <div class="species-import-box">
-            <div>
-              <strong>Не нашли нужный вид?</strong>
-              <p>Введите название, а PlantCare проверит статью в Wikipedia и добавит вид в каталог.</p>
-            </div>
-            <form class="species-import-form" id="species-import-form">
-              <label>
-                <span class="sr-only">Название вида для поиска в Wikipedia</span>
-                <input name="query" minlength="2" maxlength="120" placeholder="Например, калатея или calathea" required />
-              </label>
-              <button class="button" type="submit">Добавить вид из Wikipedia</button>
-            </form>
-            <p class="message compact-message" id="species-import-message"></p>
-          </div>
-        </section>
-        <p class="message" id="plants-message"></p>
-        <div class="plant-grid" id="plants-grid"></div>
-        <div class="panel" id="plant-detail" hidden></div>
-      </section>
-
-      <section class="page" id="calendar-page">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">Планирование</p>
-            <h2>Календарь ухода</h2>
-          </div>
-        </div>
-        <form class="panel form-grid" id="task-form">
-          <label>
-            Растение
-            <select name="plant" required></select>
-          </label>
-          <label>
-            Тип
-            <select name="task_type">
-              <option value="water">Полив</option>
-              <option value="fertilize">Удобрение</option>
-              <option value="repot">Пересадка</option>
-              <option value="prune">Обрезка</option>
-            </select>
-          </label>
-          <label>
-            Дата
-            <input name="due_date" type="date" required />
-          </label>
-          <label class="wide">
-            Заметки
-            <textarea name="notes" maxlength="1000" rows="2"></textarea>
-          </label>
-          <button class="button primary" type="submit">Добавить задачу</button>
-        </form>
-        <p class="message" id="calendar-message"></p>
-        <div class="list" id="tasks-list"></div>
-      </section>
-
-      <section class="page" id="profile-page">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">Профиль</p>
-            <h2>Аккаунт и коллекции</h2>
-            <p class="section-description">Настройте внешний вид, импортируйте растения или соберите их в группы.</p>
-          </div>
-        </div>
-        <div class="profile-top-grid">
-          <section class="panel account-panel">
-            <h3>Аккаунт</h3>
-            <p id="profile-info">Войдите, чтобы увидеть профиль.</p>
-            <div class="setting-row">
-              <div>
-                <strong>Темная тема</strong>
-                <span>Можно переключить в любой момент.</span>
-              </div>
-              <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false">
-                <span></span>
-              </button>
-            </div>
-          </section>
-          <form class="panel form" id="import-form">
-            <h3>CSV-импорт</h3>
-            <p class="muted">Добавьте сразу несколько растений из подготовленного файла.</p>
-            <label class="file-picker">
-              <input name="file" type="file" accept=".csv,text/csv" required />
-              <span>Выбрать CSV</span>
-              <strong id="import-file-name">Файл не выбран</strong>
-            </label>
-            <button class="button primary" type="submit">Импортировать</button>
-          </form>
-        </div>
-        <section class="panel collection-builder">
-          <div class="form-section-head">
-            <div>
-              <h3>Новая коллекция</h3>
-              <p>Объедините растения по комнате, типу или любому удобному признаку.</p>
-            </div>
-          </div>
-          <form class="collection-form-grid" id="collection-form">
-            <label>
-              Название
-              <input name="name" maxlength="120" placeholder="Например, Гостиная" required />
-            </label>
-            <label>
-              Описание
-              <input name="description" maxlength="1000" placeholder="Короткое описание коллекции" />
-            </label>
-            <fieldset class="form-span-2">
-              <legend>Растения в коллекции</legend>
-              <div class="plant-choice-list" id="collection-plant-options"></div>
-            </fieldset>
-            <div class="form-actions form-span-2">
-              <button class="button primary" type="submit">Создать коллекцию</button>
-            </div>
-          </form>
-        </section>
-        <p class="message" id="profile-message"></p>
-        <div class="collection-grid" id="collections-grid"></div>
-      </section>
+      <div class="section-title compact community-title">
+        <h2>Сообщество PlantCare</h2>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
     </main>
 
-    <script src="/assets/app.js?v=20260610-10"></script>
+    <script src="/assets/app.js?v=20260610-11"></script>
   </body>
 </html>
